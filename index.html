@@ -8,782 +8,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-
+  <link rel="stylesheet" href="styles.css" />
   <style>
-    /* ── Reset ── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* ── Tokens ── */
-    :root {
-      --green-900: #04342C;
-      --green-800: #085041;
-      --green-700: #0F6E56;
-      --green-600: #1D9E75;
-      --green-400: #3DBFA0;
-      --green-200: #9FE1CB;
-      --green-100: #C8EFE4;
-      --green-50:  #E1F5EE;
-
-      --amber-700: #854F0B;
-      --amber-600: #BA7517;
-      --amber-100: #FAEEDA;
-
-      --red-600:   #A32D2D;
-      --red-50:    #FCEBEB;
-
-      --gray-900:  #1a1a1a;
-      --gray-700:  #374151;
-      --gray-500:  #6B7280;
-      --gray-300:  #D1D5DB;
-      --gray-100:  #F3F4F6;
-      --gray-50:   #F9FAFB;
-      --white:     #ffffff;
-
-      --font-serif: 'Lora', Georgia, serif;
-      --font-sans:  'DM Sans', system-ui, sans-serif;
-
-      --radius-sm:  6px;
-      --radius-md:  10px;
-      --radius-lg:  16px;
-      --radius-xl:  24px;
-
-      --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
-      --shadow-md:  0 4px 16px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.05);
-      --shadow-lg:  0 10px 40px rgba(0,0,0,.10), 0 4px 12px rgba(0,0,0,.06);
-
-      --transition: 0.18s ease;
-    }
-
-    /* ── Base ── */
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: var(--font-sans);
-      font-size: 15px;
-      line-height: 1.6;
-      color: var(--gray-900);
-      background: var(--gray-50);
-      min-height: 100vh;
-    }
-
-    /* ── Page shell ── */
-    .page-bg {
-      min-height: 100vh;
-      background:
-        radial-gradient(ellipse 80% 60% at 10% -10%, rgba(29,158,117,.12) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 50% at 95% 110%, rgba(15,110,86,.10) 0%, transparent 55%),
-        var(--gray-50);
-      padding: 2rem 1rem 4rem;
-    }
-
-    .page-wrap {
-      max-width: 780px;
-      margin: 0 auto;
-    }
-
-    /* ── Top bar ── */
-    .top-bar {
+    /* Added brief styling for the new peril checkboxes */
+    .checkbox-group {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 2rem;
+      gap: 20px;
+      padding-top: 10px;
     }
-
-    .logo-group {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .logo-mark {
-      width: 44px;
-      height: 44px;
-      border-radius: var(--radius-md);
-      background: var(--green-700);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .logo-mark i { font-size: 22px; color: #fff; }
-
-    .logo-text { line-height: 1.2; }
-    .logo-text strong {
-      display: block;
-      font-family: var(--font-serif);
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--green-800);
-    }
-    .logo-text span {
-      font-size: 11px;
-      color: var(--gray-500);
-      letter-spacing: .02em;
-    }
-
-    .save-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--gray-500);
-      background: var(--white);
-      border: 1px solid var(--gray-300);
-      border-radius: 20px;
-      padding: 6px 14px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .save-badge i { font-size: 13px; color: var(--green-600); }
-
-    /* ── Step progress bar ── */
-    .progress-wrap {
-      background: var(--white);
-      border-radius: var(--radius-lg);
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: var(--shadow-sm);
-      border: 1px solid var(--gray-300);
-    }
-
-    .progress-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 12px;
-    }
-
-    .progress-meta .step-label {
-      font-family: var(--font-serif);
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--green-800);
-    }
-
-    .progress-meta .step-counter {
-      font-size: 12px;
-      color: var(--gray-500);
-    }
-
-    .progress-track {
-      height: 5px;
-      background: var(--gray-100);
-      border-radius: 99px;
-      overflow: hidden;
-      margin-bottom: 14px;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--green-600), var(--green-400));
-      border-radius: 99px;
-      transition: width .4s ease;
-    }
-
-    .step-pills {
-      display: flex;
-      gap: 6px;
-    }
-
-    .step-pill {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
-      cursor: pointer;
-      border: none;
-      background: none;
-      padding: 0;
-      font-family: var(--font-sans);
-    }
-
-    .pill-dot {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 2px solid var(--gray-300);
-      background: var(--white);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--gray-500);
-      transition: all var(--transition);
-    }
-
-    .step-pill.active .pill-dot {
-      background: var(--green-700);
-      border-color: var(--green-700);
-      color: var(--white);
-      box-shadow: 0 0 0 4px rgba(29,158,117,.18);
-    }
-
-    .step-pill.done .pill-dot {
-      background: var(--green-600);
-      border-color: var(--green-600);
-      color: var(--white);
-    }
-
-    .step-pill span {
-      font-size: 10px;
-      color: var(--gray-500);
-      white-space: nowrap;
-    }
-
-    .step-pill.active span { color: var(--green-700); font-weight: 500; }
-    .step-pill.done span   { color: var(--green-600); }
-
-    /* ── Card ── */
-    .card {
-      background: var(--white);
-      border: 1px solid var(--gray-300);
-      border-radius: var(--radius-lg);
-      padding: 1.5rem;
-      margin-bottom: 1rem;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .card-title {
-      font-family: var(--font-serif);
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--green-800);
+    .checkbox-label {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding-bottom: 12px;
-      margin-bottom: 16px;
-      border-bottom: 1px solid var(--green-50);
-    }
-
-    .card-title i {
-      font-size: 17px;
-      color: var(--green-600);
-    }
-
-    .card-title .ct-badge {
-      margin-left: auto;
-      font-family: var(--font-sans);
-      font-size: 10px;
-      font-weight: 400;
-      color: var(--gray-500);
-      background: var(--gray-100);
-      padding: 2px 8px;
-      border-radius: 20px;
-    }
-
-    /* ── Field grid ── */
-    .fg { display: grid; gap: 14px; }
-    .fg-2 { grid-template-columns: 1fr 1fr; }
-    .fg-3 { grid-template-columns: 1fr 1fr 1fr; }
-    .fg-1 { grid-template-columns: 1fr; }
-    .span2 { grid-column: span 2; }
-    .span3 { grid-column: span 3; }
-
-    /* ── Field ── */
-    .field { display: flex; flex-direction: column; gap: 5px; }
-
-    .field label {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--gray-700);
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .field label .req { color: var(--red-600); }
-
-    .field label .lbadge {
-      font-weight: 400;
-      font-size: 10px;
-      color: var(--gray-500);
-      background: var(--gray-100);
-      padding: 1px 7px;
-      border-radius: 20px;
-    }
-
-    .field input[type="text"],
-    .field input[type="number"],
-    .field input[type="date"],
-    .field input[type="tel"],
-    .field select,
-    .field textarea {
-      font-family: var(--font-sans);
-      font-size: 13.5px;
-      color: var(--gray-900);
-      background: var(--white);
-      border: 1px solid var(--gray-300);
-      border-radius: var(--radius-md);
-      padding: 9px 12px;
-      width: 100%;
-      outline: none;
-      transition: border-color var(--transition), box-shadow var(--transition);
-      appearance: none;
-    }
-
-    .field input:focus,
-    .field select:focus,
-    .field textarea:focus {
-      border-color: var(--green-600);
-      box-shadow: 0 0 0 3px rgba(29,158,117,.15);
-    }
-
-    .field input:hover,
-    .field select:hover,
-    .field textarea:hover {
-      border-color: var(--green-200);
-    }
-
-    .field select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 32px;
-    }
-
-    .field textarea { resize: vertical; min-height: 76px; line-height: 1.5; }
-
-    .field-hint {
-      font-size: 11px;
-      color: var(--gray-500);
-      margin-top: 1px;
-    }
-
-    /* ── Derived field ── */
-    .derived-display {
-      font-family: var(--font-sans);
-      font-size: 13px;
-      background: var(--green-50);
-      border: 1px solid rgba(29,158,117,.25);
-      border-radius: var(--radius-md);
-      padding: 9px 12px;
-      color: var(--green-800);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .derived-display i { font-size: 14px; color: var(--green-600); }
-
-    /* ── Tag input (multi-valued) ── */
-    .tag-wrap {
-      background: var(--white);
-      border: 1px solid var(--gray-300);
-      border-radius: var(--radius-md);
-      padding: 7px 8px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      min-height: 42px;
-      transition: border-color var(--transition), box-shadow var(--transition);
-      cursor: text;
-    }
-
-    .tag-wrap:focus-within {
-      border-color: var(--green-600);
-      box-shadow: 0 0 0 3px rgba(29,158,117,.15);
-    }
-
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: var(--green-50);
-      color: var(--green-800);
-      border: 1px solid rgba(15,110,86,.2);
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 500;
-      padding: 3px 10px 3px 10px;
-    }
-
-    .tag button {
-      background: none;
-      border: none;
       cursor: pointer;
-      color: var(--green-700);
-      font-size: 15px;
-      line-height: 1;
-      padding: 0;
-      opacity: .7;
-      transition: opacity var(--transition);
-    }
-
-    .tag button:hover { opacity: 1; }
-
-    .tag-input {
-      border: none;
-      outline: none;
-      background: transparent;
-      font-family: var(--font-sans);
-      font-size: 13px;
-      color: var(--gray-900);
-      flex: 1;
-      min-width: 120px;
-      padding: 2px 4px;
-    }
-
-    .tag-hint {
-      font-size: 11px;
-      color: var(--gray-500);
-    }
-
-    /* ── Toggle ── */
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      background: var(--gray-50);
-      border: 1px solid var(--gray-300);
-      border-radius: var(--radius-md);
-    }
-
-    .toggle-sw {
-      position: relative;
-      width: 38px;
-      height: 22px;
-      flex-shrink: 0;
-    }
-
-    .toggle-sw input { opacity: 0; width: 0; height: 0; }
-
-    .sw-track {
-      position: absolute;
-      inset: 0;
-      background: var(--gray-300);
-      border-radius: 99px;
-      cursor: pointer;
-      transition: background var(--transition);
-    }
-
-    .sw-track::before {
-      content: '';
-      position: absolute;
-      width: 16px;
-      height: 16px;
-      left: 3px;
-      top: 3px;
-      background: var(--white);
-      border-radius: 50%;
-      transition: transform var(--transition);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .toggle-sw input:checked + .sw-track { background: var(--green-600); }
-    .toggle-sw input:checked + .sw-track::before { transform: translateX(16px); }
-
-    .toggle-label {
-      font-size: 13px;
-      color: var(--gray-700);
-    }
-
-    /* ── CPI Table ── */
-    .cpi-label {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--gray-700);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 6px;
-    }
-
-    .cpi-label i { font-size: 14px; color: var(--green-600); }
-
-    .cpi-tbl {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    .cpi-tbl th {
-      text-align: left;
-      padding: 8px 10px;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--gray-500);
-      background: var(--gray-50);
-      border-top: 1px solid var(--gray-300);
-      border-bottom: 1px solid var(--gray-300);
-    }
-
-    .cpi-tbl td {
-      padding: 5px 10px;
-      border-bottom: 1px solid var(--gray-100);
-      color: var(--gray-900);
-    }
-
-    .cpi-tbl tbody tr:last-child td { border-bottom: none; }
-
-    .cpi-tbl td input {
-      font-family: var(--font-sans);
-      font-size: 13px;
-      color: var(--gray-900);
-      background: transparent;
-      border: none;
-      outline: none;
-      width: 100%;
-      padding: 3px 4px;
-      border-radius: var(--radius-sm);
-      transition: background var(--transition);
-    }
-
-    .cpi-tbl td input:focus {
-      background: var(--green-50);
-      box-shadow: none;
-    }
-
-    .cpi-tbl .del-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--gray-300);
-      font-size: 16px;
-      padding: 2px;
-      border-radius: var(--radius-sm);
-      transition: color var(--transition);
-      display: flex;
-      align-items: center;
-    }
-
-    .cpi-tbl .del-btn:hover { color: var(--red-600); }
-
-    .add-row {
-      width: 100%;
-      margin-top: 8px;
-      padding: 8px;
-      background: none;
-      border: 1.5px dashed var(--gray-300);
-      border-radius: var(--radius-md);
-      font-family: var(--font-sans);
-      font-size: 12px;
-      color: var(--green-700);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: background var(--transition), border-color var(--transition);
-    }
-
-    .add-row:hover {
-      background: var(--green-50);
-      border-color: var(--green-400);
-    }
-
-    .total-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 14px;
-      padding: 12px 16px;
-      background: var(--green-50);
-      border: 1px solid rgba(29,158,117,.25);
-      border-radius: var(--radius-md);
-    }
-
-    .total-row .tl {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--green-800);
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-
-    .total-row .tl i { font-size: 14px; color: var(--green-600); }
-
-    .total-row .tv {
-      font-family: var(--font-serif);
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--green-800);
-    }
-
-    /* ── Signature box ── */
-    .sig-box {
-      height: 90px;
-      background: var(--gray-50);
-      border: 1.5px dashed var(--gray-300);
-      border-radius: var(--radius-md);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      color: var(--gray-500);
-      font-size: 12px;
-    }
-
-    .sig-box i { font-size: 20px; color: var(--gray-300); }
-
-    /* ── Info callout ── */
-    .callout {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 14px 16px;
-      border-radius: var(--radius-md);
-      font-size: 13px;
-    }
-
-    .callout.green {
-      background: var(--green-50);
-      border: 1px solid rgba(29,158,117,.25);
-      color: var(--green-800);
-    }
-
-    .callout.amber {
-      background: var(--amber-100);
-      border: 1px solid rgba(186,117,23,.2);
-      color: var(--amber-700);
-    }
-
-    .callout i { font-size: 16px; margin-top: 2px; flex-shrink: 0; }
-
-    .callout-body { line-height: 1.6; }
-    .callout-body strong { display: block; font-weight: 500; margin-bottom: 3px; }
-
-    /* ── Footer nav ── */
-    .form-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 1.5rem;
-      padding-top: 1.25rem;
-      border-top: 1px solid var(--gray-300);
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-family: var(--font-sans);
-      font-size: 13.5px;
-      font-weight: 500;
-      padding: 10px 22px;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      border: none;
-      transition: all var(--transition);
-      text-decoration: none;
-    }
-
-    .btn-ghost {
-      background: var(--white);
-      border: 1px solid var(--gray-300);
-      color: var(--gray-700);
-    }
-
-    .btn-ghost:hover {
-      background: var(--gray-50);
-      border-color: var(--gray-500);
-    }
-
-    .btn-primary {
-      background: var(--green-700);
-      color: var(--white);
-      box-shadow: 0 2px 8px rgba(15,110,86,.3);
-    }
-
-    .btn-primary:hover {
-      background: var(--green-800);
-      box-shadow: 0 4px 14px rgba(15,110,86,.35);
-      transform: translateY(-1px);
-    }
-
-    .btn-primary:active { transform: translateY(0); }
-
-    .btn-submit {
-      background: var(--amber-600);
-      color: var(--white);
-      box-shadow: 0 2px 8px rgba(186,117,23,.3);
-    }
-
-    .btn-submit:hover {
-      background: var(--amber-700);
-      box-shadow: 0 4px 14px rgba(186,117,23,.35);
-      transform: translateY(-1px);
-    }
-
-    /* ── Steps visibility ── */
-    .step-page { display: none; }
-    .step-page.active { display: block; }
-
-    /* ── Success ── */
-    .success-wrap {
-      text-align: center;
-      padding: 3rem 2rem;
-    }
-
-    .success-icon {
-      width: 80px;
-      height: 80px;
-      background: var(--green-50);
-      border: 2px solid rgba(29,158,117,.3);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 1.5rem;
-    }
-
-    .success-icon i { font-size: 36px; color: var(--green-700); }
-
-    .success-wrap h2 {
-      font-family: var(--font-serif);
-      font-size: 22px;
-      color: var(--green-800);
-      margin-bottom: 8px;
-    }
-
-    .success-wrap p {
-      font-size: 14px;
-      color: var(--gray-500);
-      max-width: 420px;
-      margin: 0 auto;
-      line-height: 1.7;
-    }
-
-    .ref-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin: 1.75rem auto;
-      padding: 12px 24px;
-      background: var(--green-50);
-      border: 1px solid rgba(29,158,117,.3);
-      border-radius: 99px;
-      font-size: 13px;
-      color: var(--green-800);
-    }
-
-    .ref-pill strong {
-      font-family: var(--font-serif);
-      font-size: 17px;
-      font-weight: 600;
-      letter-spacing: .04em;
-      color: var(--green-700);
-    }
-
-    .new-btn {
-      margin-top: 1rem;
-    }
-
-    /* ── Section divider ── */
-    .section-gap { margin-top: 20px; }
-
-    /* ── Responsive ── */
-    @media (max-width: 600px) {
-      .fg-2, .fg-3 { grid-template-columns: 1fr; }
-      .span2, .span3 { grid-column: span 1; }
-      .step-pill span { display: none; }
-      .page-bg { padding: 1rem .75rem 3rem; }
     }
   </style>
 </head>
@@ -852,27 +89,27 @@
         <div class="card">
           <div class="card-title">
             <i class="ti ti-user-circle"></i>
-            Personal information
+            Personal Information
           </div>
           <div class="fg fg-2">
             <div class="field span2">
               <label>Name of proposer <span class="req">*</span></label>
-              <input type="text" id="proposerName" placeholder="Full legal name" value="Kyle Aaron Emuslan" />
+              <input type="text" id="proposerName" placeholder="Enter Full Name"/>
             </div>
             <div class="field span2">
               <label>Address <span class="req">*</span> <span class="lbadge">Street, Brgy, Municipality, Province, Zip</span></label>
-              <input type="text" id="address" placeholder="Complete address" value="143 Mabini St., San Jose, Dasmariñas, Cavite 4114" />
+              <input type="text" id="address" placeholder="Enter complete address"/>
             </div>
             <div class="field">
               <label>Birthday <span class="req">*</span></label>
-              <input type="date" id="birthday" value="1985-04-11" />
+              <input type="date" id="Enter birthday" placeholder="Enter birthday"/>
             </div>
             <div class="field">
               <label>Civil status <span class="req">*</span></label>
               <select id="civilStatus">
-                <option value="">Select status</option>
+                <option value="" selected>Select status</option>
                 <option value="S">Single</option>
-                <option value="M" selected>Married</option>
+                <option value="M">Married</option>
                 <option value="W">Widowed</option>
                 <option value="SE">Separated</option>
               </select>
@@ -880,22 +117,22 @@
             <div class="field">
               <label>Sex <span class="req">*</span></label>
               <select id="sex">
-                <option value="">Select</option>
-                <option value="M" selected>Male</option>
+                <option value="" selected>Select</option>
+                <option value="M">Male</option>
                 <option value="F">Female</option>
               </select>
             </div>
             <div class="field">
               <label>Beneficiary <span class="req">*</span></label>
-              <input type="text" id="beneficiary" placeholder="Full name" value="Mitch Montales" />
+              <input type="text" id="beneficiary" placeholder="Enter beneficiary's full name"/>
             </div>
             <div class="field">
               <label>Spouse <span class="lbadge">if applicable</span></label>
-              <input type="text" id="spouse" placeholder="Full name" value="Mitch Montales" />
+              <input type="text" id="spouse" placeholder="Enter spouse's full name"/>
             </div>
             <div class="field">
               <label>Spouse birthday <span class="lbadge">if applicable</span></label>
-              <input type="date" id="spouseBday" value="1987-08-22" />
+              <input type="date" id="spouseBday"/>
             </div>
           </div>
         </div>
@@ -907,11 +144,9 @@
             <span class="ct-badge">Multi-valued — press Enter to add</span>
           </div>
           <div class="tag-wrap" id="contactWrap" onclick="this.querySelector('.tag-input').focus()">
-            <span class="tag">0917-123-4567 <button onclick="removeTag(this)" aria-label="Remove">×</button></span>
-            <span class="tag">0918-987-6543 <button onclick="removeTag(this)" aria-label="Remove">×</button></span>
             <input class="tag-input" type="tel" placeholder="Add number and press Enter..." onkeydown="addTag(event,'contactWrap')" />
           </div>
-          <p class="tag-hint" style="margin-top:6px;">Mobile or landline numbers accepted (varchar 15)</p>
+          <p class="tag-hint" style="margin-top:6px;">Mobile or landline numbers accepted</p>
         </div>
 
         <div class="card">
@@ -947,24 +182,24 @@
           <div class="fg fg-2">
             <div class="field">
               <label>Crops <span class="req">*</span></label>
-              <input type="text" id="crops" placeholder="Type of crop" value="Mango" />
+              <input type="text" id="crops" placeholder="Type of crop" value="" />
             </div>
             <div class="field">
               <label>Plantation size (ha) <span class="req">*</span></label>
-              <input type="number" id="plantationSize" step="0.01" placeholder="0.00" value="2.5" />
+              <input type="number" id="plantationSize" step="0.01" placeholder="0.00" value="" />
               <p class="field-hint">Total size in hectares (up to 5 decimal places)</p>
             </div>
             <div class="field">
               <label>Coverage from <span class="req">*</span></label>
-              <input type="date" id="coverageStart" value="2026-01-01" />
+              <input type="date" id="coverageStart" value="" />
             </div>
             <div class="field">
               <label>Coverage to <span class="req">*</span></label>
-              <input type="date" id="coverageEnd" value="2026-12-31" />
+              <input type="date" id="coverageEnd" value="" />
             </div>
             <div class="field span2">
               <label>Desired amount of cover (₱) <span class="req">*</span></label>
-              <input type="number" id="desiredCover" placeholder="0" value="250000" />
+              <input type="number" id="desiredCover" placeholder="0" value="" />
               <p class="field-hint">Integer value in Philippine Peso (up to 5 digits)</p>
             </div>
           </div>
@@ -974,15 +209,21 @@
           <div class="card-title">
             <i class="ti ti-bolt"></i>
             Perils to be covered
-            <span class="ct-badge">Multi-valued — press Enter to add</span>
           </div>
-          <div class="tag-wrap" id="perilWrap" onclick="this.querySelector('.tag-input').focus()">
-            <span class="tag">Typhoon <button onclick="removeTag(this)" aria-label="Remove">×</button></span>
-            <span class="tag">Drought <button onclick="removeTag(this)" aria-label="Remove">×</button></span>
-            <span class="tag">Pest Infestation <button onclick="removeTag(this)" aria-label="Remove">×</button></span>
-            <input class="tag-input" type="text" placeholder="Add peril and press Enter..." onkeydown="addTag(event,'perilWrap')" />
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="perilDrought" value="Drought" />
+              Drought
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="perilTyphoon" value="Typhoon" />
+              Typhoon
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="perilPest" value="Pest Infestation" />
+              Pest Infestation
+            </label>
           </div>
-          <p class="tag-hint" style="margin-top:6px;">e.g. Typhoon, Flood, Drought, Fire, Pest Infestation</p>
         </div>
 
       </div>
@@ -998,29 +239,29 @@
           <div class="fg fg-2">
             <div class="field span2">
               <label>Name of plantation / coop / LI / farmer <span class="req">*</span></label>
-              <input type="text" id="plantationName" value="San Jose Fruit Growers Coop / Sean Gabriel" />
+              <input type="text" id="plantationName" placeholder="Enter plantation name" value="" />
             </div>
             <div class="field span2">
               <label>Farm address <span class="req">*</span> <span class="lbadge">Sitio, Brgy, Municipality, Province</span></label>
-              <input type="text" id="farmAddress" placeholder="Complete farm location" value="Sitio Tubigan, San Jose, Dasmariñas, Cavite" />
+              <input type="text" id="farmAddress" placeholder="Complete farm location" value="" />
             </div>
             <div class="field">
               <label>Farm area (ha) <span class="req">*</span></label>
-              <input type="number" id="farmArea" step="0.01" placeholder="0.00" value="2.5" />
+              <input type="number" id="farmArea" step="0.01" placeholder="0.00" value="" />
             </div>
             <div class="field">
               <label>Soil type <span class="req">*</span></label>
-              <input type="text" id="soilType" placeholder="e.g. Clay Loam, Sandy" value="Clay Loam" />
+              <input type="text" id="soilType" placeholder="e.g. Clay Loam, Sandy" value="" />
               <p class="field-hint">varchar(10)</p>
             </div>
             <div class="field">
               <label>Soil pH <span class="req">*</span> <span class="lbadge">0 &lt; pH &lt; 15</span></label>
-              <input type="number" id="soilPH" step="0.1" min="0.1" max="14.9" placeholder="6.5" value="6.5" />
+              <input type="number" id="soilPH" step="0.1" min="0.1" max="14.9" placeholder="0.0" value="" />
               <p class="field-hint">Float, 3 characters max</p>
             </div>
             <div class="field">
               <label>Topography <span class="req">*</span></label>
-              <input type="text" id="topography" placeholder="e.g. Flat, Gently Sloping" value="Gently Sloping" />
+              <input type="text" id="topography" placeholder="e.g. Flat, Gently Sloping" value="" />
               <p class="field-hint">varchar(10)</p>
             </div>
           </div>
@@ -1039,24 +280,24 @@
           <div class="fg fg-2">
             <div class="field span2">
               <label>Variety <span class="req">*</span></label>
-              <input type="text" id="variety" placeholder="Crop variety name" value="Carabao Mango (Sweet Elena strain)" />
+              <input type="text" id="variety" placeholder="Crop variety name" value="" />
               <p class="field-hint">varchar(20)</p>
             </div>
             <div class="field">
               <label>Area planted (ha) <span class="req">*</span></label>
-              <input type="number" id="areaPlanted" step="0.01" placeholder="0.00" value="2.5" />
+              <input type="number" id="areaPlanted" step="0.01" placeholder="0.00" value="" />
             </div>
             <div class="field">
               <label>Date of planting <span class="req">*</span></label>
-              <input type="date" id="datePlanting" value="2015-06-10" onchange="calcAge()" />
+              <input type="date" id="datePlanting" value="" onchange="calcAge()" />
             </div>
             <div class="field">
               <label>Estimated harvest date <span class="req">*</span></label>
-              <input type="date" id="estHarvest" value="2026-05-15" />
+              <input type="date" id="estHarvest" value="" />
             </div>
             <div class="field">
               <label>Population density (no. of hills) <span class="req">*</span></label>
-              <input type="number" id="hillsNum" placeholder="0" value="100" />
+              <input type="number" id="hillsNum" placeholder="0" value="" />
               <p class="field-hint">Total number of hills, integer (7 chars)</p>
             </div>
             <div class="field span2">
@@ -1078,17 +319,17 @@
           <div class="fg fg-3">
             <div class="field">
               <label>Irrigation type <span class="req">*</span></label>
-              <input type="text" id="irrigationType" placeholder="e.g. Drip, Sprinkler" value="Drip Irrigation" />
+              <input type="text" id="irrigationType" placeholder="e.g. Drip, Sprinkler" value="" />
               <p class="field-hint">varchar(15)</p>
             </div>
             <div class="field">
               <label>Number of trees <span class="req">*</span></label>
-              <input type="number" id="treesNum" placeholder="0" value="250" />
+              <input type="number" id="treesNum" placeholder="0" value="" />
               <p class="field-hint">Integer (7 chars)</p>
             </div>
             <div class="field">
               <label>Average yield (MT/ha) <span class="req">*</span></label>
-              <input type="number" id="avgYield" step="0.1" placeholder="0.0" value="12" />
+              <input type="number" id="avgYield" step="0.1" placeholder="0.0" value="" />
               <p class="field-hint">Float (10 chars)</p>
             </div>
           </div>
@@ -1107,7 +348,7 @@
 
           <div class="field" style="max-width:200px; margin-bottom:18px;">
             <label>Days after planting <span class="req">*</span></label>
-            <input type="number" id="daysAfterPlanting" placeholder="0" value="30" />
+            <input type="number" id="daysAfterPlanting" placeholder="0" value="" />
             <p class="field-hint">Integer (5 chars)</p>
           </div>
 
@@ -1127,21 +368,9 @@
             </thead>
             <tbody id="matBody">
               <tr>
-                <td><input type="text" value="Complete Fertilizer (14-14-14)" placeholder="Item name" /></td>
-                <td><input type="text" value="15 sacks" placeholder="Qty + unit" /></td>
-                <td><input type="number" value="22500" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>
-                <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
-              </tr>
-              <tr>
-                <td><input type="text" value="Foliar Fertilizer" placeholder="Item name" /></td>
-                <td><input type="text" value="10 liters" placeholder="Qty + unit" /></td>
-                <td><input type="number" value="8000" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>
-                <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
-              </tr>
-              <tr>
-                <td><input type="text" value="Pesticide" placeholder="Item name" /></td>
-                <td><input type="text" value="5 liters" placeholder="Qty + unit" /></td>
-                <td><input type="number" value="6500" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>
+                <td><input type="text" value="" placeholder="Item name" /></td>
+                <td><input type="text" value="" placeholder="Qty + unit" /></td>
+                <td><input type="number" value="" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>
                 <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
               </tr>
             </tbody>
@@ -1166,15 +395,9 @@
             </thead>
             <tbody id="labBody">
               <tr>
-                <td><input type="text" value="Spraying/Application" placeholder="Workforce type" /></td>
-                <td><input type="text" value="4 persons" placeholder="Qty + unit" /></td>
-                <td><input type="number" value="2400" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>
-                <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
-              </tr>
-              <tr>
-                <td><input type="text" value="Underbrushing/Clearing" placeholder="Workforce type" /></td>
-                <td><input type="text" value="3 persons" placeholder="Qty + unit" /></td>
-                <td><input type="number" value="1800" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>
+                <td><input type="text" value="" placeholder="Workforce type" /></td>
+                <td><input type="text" value="" placeholder="Qty + unit" /></td>
+                <td><input type="number" value="" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>
                 <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
               </tr>
             </tbody>
@@ -1189,7 +412,7 @@
               <i class="ti ti-calculator"></i>
               Total cost (derived — sum of all materials + labor)
             </span>
-            <span class="tv" id="totalCost">₱41,200.00</span>
+            <span class="tv" id="totalCost">₱0.00</span>
           </div>
         </div>
 
@@ -1206,16 +429,16 @@
           <div class="fg fg-2">
             <div class="field span2">
               <label>Name of supervising production technician <span class="req">*</span></label>
-              <input type="text" id="supervisingPT" placeholder="Full name" value="Engr. Ian Mark Kamangkang" />
+              <input type="text" id="supervisingPT" placeholder="Full name" value="" />
               <p class="field-hint">varchar(30)</p>
             </div>
             <div class="field">
               <label>PT signature date <span class="req">*</span></label>
-              <input type="date" id="ptDate" value="2026-03-20" />
+              <input type="date" id="ptDate" value="" />
             </div>
             <div class="field">
               <label>Proposer date <span class="req">*</span></label>
-              <input type="date" id="proposeDate" value="2026-03-21" />
+              <input type="date" id="proposeDate" value="" />
               <p class="field-hint">Default: system date</p>
             </div>
             <div class="field span2">
@@ -1278,165 +501,8 @@
           Next <i class="ti ti-arrow-right"></i>
         </button>
       </div>
-
     </div>
   </div>
-
-  <script>
-    /* ── State ── */
-    let cur = 0;
-    const TOTAL = 6;
-    const LABELS = [
-      'Personal Information',
-      'Insurance Coverage',
-      'Farm Overview',
-      'Crop Variety & Irrigation',
-      'Cost of Production Inputs',
-      'Validation & Signatures'
-    ];
-
-    /* ── Navigation ── */
-    function goTo(n) {
-      if (n > cur) return;
-      document.getElementById('page-' + cur).classList.remove('active');
-      cur = n;
-      document.getElementById('page-' + cur).classList.add('active');
-      syncNav();
-    }
-
-    function nextStep() {
-      if (cur === TOTAL - 1) {
-        document.getElementById('page-' + cur).classList.remove('active');
-        document.getElementById('page-success').classList.add('active');
-        document.getElementById('formFooter').style.display = 'none';
-        updatePills(TOTAL);
-        document.getElementById('stepLabel').textContent = 'Application Submitted';
-        document.getElementById('stepCounter').textContent = 'Complete';
-        document.getElementById('progressFill').style.width = '100%';
-        return;
-      }
-      document.getElementById('page-' + cur).classList.remove('active');
-      cur++;
-      document.getElementById('page-' + cur).classList.add('active');
-      syncNav();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function prevStep() {
-      if (cur === 0) return;
-      document.getElementById('page-' + cur).classList.remove('active');
-      cur--;
-      document.getElementById('page-' + cur).classList.add('active');
-      syncNav();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function syncNav() {
-      document.getElementById('btnBack').style.visibility = cur === 0 ? 'hidden' : 'visible';
-      const btn = document.getElementById('btnNext');
-      if (cur === TOTAL - 1) {
-        btn.className = 'btn btn-submit';
-        btn.innerHTML = '<i class="ti ti-send"></i> Submit application';
-      } else {
-        btn.className = 'btn btn-primary';
-        btn.innerHTML = 'Next <i class="ti ti-arrow-right"></i>';
-      }
-      document.getElementById('stepLabel').textContent = LABELS[cur];
-      document.getElementById('stepCounter').textContent = 'Step ' + (cur + 1) + ' of ' + TOTAL;
-      document.getElementById('progressFill').style.width = ((cur + 1) / TOTAL * 100).toFixed(2) + '%';
-      updatePills(cur);
-    }
-
-    function updatePills(active) {
-      document.querySelectorAll('.step-pill').forEach((p, i) => {
-        p.classList.remove('active', 'done');
-        if (i === active) p.classList.add('active');
-        else if (i < active) p.classList.add('done');
-      });
-    }
-
-    function resetForm() {
-      location.reload();
-    }
-
-    /* ── Tag input ── */
-    function addTag(e, wrapId) {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      const wrap = document.getElementById(wrapId);
-      const input = wrap.querySelector('.tag-input');
-      const val = input.value.trim();
-      if (!val) return;
-      const tag = document.createElement('span');
-      tag.className = 'tag';
-      tag.innerHTML = val + ' <button onclick="removeTag(this)" aria-label="Remove">×</button>';
-      wrap.insertBefore(tag, input);
-      input.value = '';
-    }
-
-    function removeTag(btn) {
-      btn.parentElement.remove();
-    }
-
-    /* ── IP tribe toggle ── */
-    function toggleTribe() {
-      const on = document.getElementById('ipToggle').checked;
-      document.getElementById('tribeField').style.display = on ? 'block' : 'none';
-    }
-
-    /* ── Age group calculation (derived) ── */
-    function calcAge() {
-      const dp = document.getElementById('datePlanting').value;
-      if (!dp) return;
-      const planted = new Date(dp);
-      const now = new Date();
-      let yrs = now.getFullYear() - planted.getFullYear();
-      let mos = now.getMonth() - planted.getMonth();
-      if (mos < 0) { yrs--; mos += 12; }
-      const label = yrs + ' year' + (yrs !== 1 ? 's' : '') + (mos ? ', ' + mos + ' month' + (mos !== 1 ? 's' : '') : '');
-      document.getElementById('ageGroup').textContent = label + ' — Age group: ' + yrs;
-    }
-
-    /* ── CPI total (derived) ── */
-    function recalcTotal() {
-      let total = 0;
-      document.querySelectorAll('#matBody input[type=number], #labBody input[type=number]').forEach(function(inp) {
-        total += parseFloat(inp.value) || 0;
-      });
-      document.getElementById('totalCost').textContent = '₱' + total.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    /* ── CPI row management ── */
-    function removeRow(btn) {
-      btn.closest('tr').remove();
-      recalcTotal();
-    }
-
-    function addMatRow() {
-      const tb = document.getElementById('matBody');
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td><input type="text" placeholder="Item name" /></td>' +
-        '<td><input type="text" placeholder="Qty + unit" /></td>' +
-        '<td><input type="number" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>' +
-        '<td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>';
-      tb.appendChild(tr);
-    }
-
-    function addLabRow() {
-      const tb = document.getElementById('labBody');
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td><input type="text" placeholder="Workforce type" /></td>' +
-        '<td><input type="text" placeholder="Qty + unit" /></td>' +
-        '<td><input type="number" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>' +
-        '<td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>';
-      tb.appendChild(tr);
-    }
-
-    /* ── Init ── */
-    calcAge();
-    recalcTotal();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
