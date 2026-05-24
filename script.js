@@ -274,3 +274,30 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('cpiBlocksContainer').appendChild(buildCPIBlock(true));
   calcAge();
 });
+
+// --- Dark Mode Logic ---
+function toggleTheme() {
+  const htmlEl = document.documentElement;
+  const themeIcon = document.querySelector('#themeToggle i');
+  
+  if (htmlEl.getAttribute('data-theme') === 'dark') {
+    // Switch to Light Mode
+    htmlEl.removeAttribute('data-theme');
+    localStorage.setItem('theme', 'light');
+    themeIcon.className = 'ti ti-moon';
+  } else {
+    // Switch to Dark Mode
+    htmlEl.setAttribute('data-theme', 'dark');
+    localStorage.setItem('theme', 'dark');
+    themeIcon.className = 'ti ti-sun';
+  }
+}
+
+// Check saved theme on page load
+window.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    const themeIcon = document.querySelector('#themeToggle i');
+    if (themeIcon) themeIcon.className = 'ti ti-sun';
+  }
+});

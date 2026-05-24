@@ -280,3 +280,63 @@ body { font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; }
   .col-span-2  { grid-column: span 1 !important; }
   .step-pill span { display: none; }
 }
+
+[data-theme="dark"] {
+  /* Override the inline styles on the body */
+  background-color: #111827 !important;
+  background-image: 
+    radial-gradient(ellipse 80% 60% at 10% -10%, rgba(29,158,117,.08) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 95% 110%, rgba(15,110,86,.08) 0%, transparent 55%) !important;
+  color: #F9FAFB !important;
+}
+
+/* Tailwind class overrides for cards and backgrounds */
+[data-theme="dark"] .bg-white { background-color: #1F2937 !important; border-color: #374151 !important; }
+[data-theme="dark"] .bg-gray-50 { background-color: #111827 !important; border-color: #374151 !important; }
+[data-theme="dark"] .bg-gray-100 { background-color: #374151 !important; }
+
+/* Tailwind class overrides for text */
+[data-theme="dark"] .text-gray-600 { color: #D1D5DB !important; }
+[data-theme="dark"] .text-gray-400 { color: #9CA3AF !important; }
+[data-theme="dark"] .text-gray-700 { color: #E5E7EB !important; }
+[data-theme="dark"] .text-green-800 { color: #9FE1CB !important; }
+[data-theme="dark"] .text-gray-300 { color: #4B5563 !important; }
+
+/* Custom field inputs & tag wrappers */
+[data-theme="dark"] .field-input, 
+[data-theme="dark"] .tag-wrap, 
+[data-theme="dark"] .tag-input {
+  background-color: #1F2937 !important;
+  color: #F9FAFB !important;
+  border-color: #4B5563 !important;
+}
+
+[data-theme="dark"] .field-input:hover,
+[data-theme="dark"] .tag-wrap:hover { border-color: #3DBFA0 !important; }
+[data-theme="dark"] .field-input:focus,
+[data-theme="dark"] .tag-wrap:focus-within { border-color: #1D9E75 !important; }
+
+/* CPI Tables */
+[data-theme="dark"] .cpi-tbl th { background-color: #374151 !important; border-color: #4B5563 !important; color: #D1D5DB !important; }
+[data-theme="dark"] .cpi-tbl td { border-bottom-color: #374151 !important; }
+[data-theme="dark"] .cpi-tbl td input { color: #F9FAFB !important; }
+[data-theme="dark"] .cpi-tbl td input:focus { background-color: #374151 !important; }
+
+/* Custom Checkboxes */
+[data-theme="dark"] .custom-checkbox-label { color: #D1D5DB; }
+[data-theme="dark"] .custom-checkbox-label:hover { color: #9FE1CB; }
+[data-theme="dark"] .checkmark { background-color: #1F2937; border-color: #4B5563; }
+
+/* Toggle Switch */
+[data-theme="dark"] .sw-track { background-color: #4B5563 !important; }
+[data-theme="dark"] .sw-track::before { background-color: #D1D5DB !important; }
+
+/* Fix Calendar Icon visibility on dark inputs */
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+/* Fix Select Dropdown Arrow visibility */
+[data-theme="dark"] .field-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
