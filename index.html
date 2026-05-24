@@ -94,19 +94,19 @@
           <div class="fg fg-2">
             <div class="field span2">
               <label>Name of proposer <span class="req">*</span></label>
-              <input type="text" id="proposerName" placeholder="Enter Full Name"/>
+              <input type="text" id="proposerName" placeholder="Enter Full Name" required/>
             </div>
             <div class="field span2">
               <label>Address <span class="req">*</span> <span class="lbadge">Street, Brgy, Municipality, Province, Zip</span></label>
-              <input type="text" id="address" placeholder="Enter complete address"/>
+              <input type="text" id="address" placeholder="Enter complete address" required/>
             </div>
             <div class="field">
               <label>Birthday <span class="req">*</span></label>
-              <input type="date" id="Enter birthday" placeholder="Enter birthday"/>
+              <input type="date" id="Enter birthday" placeholder="Enter birthday" required/>
             </div>
             <div class="field">
               <label>Civil status <span class="req">*</span></label>
-              <select id="civilStatus">
+              <select id="civilStatus" required>
                 <option value="" selected>Select status</option>
                 <option value="S">Single</option>
                 <option value="M">Married</option>
@@ -116,7 +116,7 @@
             </div>
             <div class="field">
               <label>Sex <span class="req">*</span></label>
-              <select id="sex">
+              <select id="sex" required>
                 <option value="" selected>Select</option>
                 <option value="M">Male</option>
                 <option value="F">Female</option>
@@ -124,7 +124,7 @@
             </div>
             <div class="field">
               <label>Beneficiary <span class="req">*</span></label>
-              <input type="text" id="beneficiary" placeholder="Enter beneficiary's full name"/>
+              <input type="text" id="beneficiary" placeholder="Enter beneficiary's full name" required/>
             </div>
             <div class="field">
               <label>Spouse <span class="lbadge">if applicable</span></label>
@@ -144,7 +144,7 @@
             <span class="ct-badge">Multi-valued — press Enter to add</span>
           </div>
           <div class="tag-wrap" id="contactWrap" onclick="this.querySelector('.tag-input').focus()">
-            <input class="tag-input" type="tel" placeholder="Add number and press Enter..." onkeydown="addTag(event,'contactWrap')" />
+            <input class="tag-input" type="tel" placeholder="Add number and press Enter..." onkeydown="addTag(event,'contactWrap')"/>
           </div>
           <p class="tag-hint" style="margin-top:6px;">Mobile or landline numbers accepted</p>
         </div>

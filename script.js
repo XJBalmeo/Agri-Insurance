@@ -20,6 +20,28 @@
     }
 
     function nextStep() {
+      //Check Civil Status to see if spouse should be required
+      const spouseChecker = document.getElementById('spouse');
+      const spouseBdayChecker = document.getElementById('spouseBday');
+      const civilStatus = document.getElementById('civilStatus').value;
+        
+      if(civilStatus == "M"){
+        spouseChecker.setAttribute('required', '');
+        spouseBdayChecker.setAttribute('required', '');
+      }else {
+        spouseChecker.removeAttribute('required');
+        spouseBdayChecker.removeAttribute('required');
+      } 
+
+      const activePage = document.getElementById('page-' + cur);
+      const inputsToValidate = activePage.querySelectorAll('input, select, textarea');
+      
+      for (let input of inputsToValidate) {
+        if (!input.reportValidity()) {
+          return; 
+        }
+      }
+
       if (cur === TOTAL - 1) {
         document.getElementById('page-' + cur).classList.remove('active');
         document.getElementById('page-success').classList.add('active');
@@ -249,3 +271,4 @@ function addMatRow(btn) {
     /* ── Init ── */
     calcAge();
     recalcTotal();
+    
