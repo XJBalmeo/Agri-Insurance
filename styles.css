@@ -672,6 +672,53 @@
       font-weight: 600;
       color: var(--green-800);
     }
+    /* ── Dynamic CPI Blocks ── */
+    .cpi-block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .del-block-btn {
+      color: var(--red-600);
+      border-color: rgba(163, 45, 45, 0.2);
+      font-size: 12px;
+      padding: 6px 12px;
+    }
+    .del-block-btn:hover {
+      background: var(--red-50);
+      border-color: var(--red-600);
+    }
+
+    .block-divider {
+      border: none;
+      border-top: 2px dashed var(--gray-300);
+      margin: 30px 0;
+    }
+
+    .add-block-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px;
+      background: var(--white);
+      border: 1px solid var(--green-600);
+      border-radius: var(--radius-md);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--green-700);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+    .add-block-btn:hover {
+      background: var(--green-50);
+      transform: translateY(-1px);
+    }
 
     /* ── Signature box ── */
     .sig-box {

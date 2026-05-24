@@ -340,84 +340,92 @@
       </div>
 
       <!-- ═══ STEP 5: CPI ═══ -->
-      <div class="step-page" id="page-4">
-
+        <div class="step-page" id="page-4">
         <div class="card">
           <div class="card-title">
             <i class="ti ti-chart-bar"></i>
             Cost of production inputs (CPI)
           </div>
 
-          <div class="field" style="max-width:200px; margin-bottom:18px;">
-            <label>Days after planting <span class="req">*</span></label>
-            <input type="number" id="daysAfterPlanting" placeholder="0" value="" />
-            <p class="field-hint">Integer (5 chars)</p>
-          </div>
+          <div id="cpiBlocksContainer">
+            
+            <div class="cpi-block">
+              <div class="cpi-block-header">
+                <div class="field" style="max-width:200px; margin-bottom:18px;">
+                  <label>Days after planting <span class="req">*</span></label>
+                  <input type="number" class="dap-input" placeholder="0" value="" />
+                  <p class="field-hint">Integer (5 chars)</p>
+                </div>
+                </div>
 
-          <!-- Materials -->
-          <div class="cpi-label">
-            <i class="ti ti-package"></i>
-            Materials
-          </div>
-          <table class="cpi-tbl">
-            <thead>
-              <tr>
-                <th style="width:42%">Item</th>
-                <th style="width:26%">Quantity</th>
-                <th style="width:22%">Cost (₱)</th>
-                <th style="width:10%"></th>
-              </tr>
-            </thead>
-            <tbody id="matBody">
-              <tr>
-                <td><input type="text" value="" placeholder="Item name" /></td>
-                <td><input type="text" value="" placeholder="Qty + unit" /></td>
-                <td><input type="number" value="" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>
-                <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
-              </tr>
-            </tbody>
-          </table>
-          <button class="add-row" onclick="addMatRow()">
-            <i class="ti ti-plus"></i> Add material entry
+              <div class="cpi-label">
+                <i class="ti ti-package"></i>
+                Materials
+              </div>
+              <table class="cpi-tbl">
+                <thead>
+                  <tr>
+                    <th style="width:42%">Item</th>
+                    <th style="width:26%">Quantity</th>
+                    <th style="width:22%">Cost (₱)</th>
+                    <th style="width:10%"></th>
+                  </tr>
+                </thead>
+                <tbody class="mat-body">
+                  <tr>
+                    <td><input type="text" value="" placeholder="Item name" /></td>
+                    <td><input type="text" value="" placeholder="Qty + unit" /></td>
+                    <td><input type="number" class="cost-input" value="" placeholder="0.00" oninput="recalcTotal()" /></td>
+                    <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <button class="add-row" onclick="addMatRow(this)">
+                <i class="ti ti-plus"></i> Add material entry
+              </button>
+
+              <div class="cpi-label section-gap">
+                <i class="ti ti-users"></i>
+                Labor
+              </div>
+              <table class="cpi-tbl">
+                <thead>
+                  <tr>
+                    <th style="width:42%">Workforce</th>
+                    <th style="width:26%">Quantity</th>
+                    <th style="width:22%">Cost (₱)</th>
+                    <th style="width:10%"></th>
+                  </tr>
+                </thead>
+                <tbody class="lab-body">
+                  <tr>
+                    <td><input type="text" value="" placeholder="Workforce type" /></td>
+                    <td><input type="text" value="" placeholder="Qty + unit" /></td>
+                    <td><input type="number" class="cost-input" value="" placeholder="0.00" oninput="recalcTotal()" /></td>
+                    <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <button class="add-row" onclick="addLabRow(this)">
+                <i class="ti ti-plus"></i> Add labor entry
+              </button>
+              
+              <hr class="block-divider" />
+            </div>
+            </div>
+
+          <button class="add-block-btn" onclick="addCPIBlock()">
+            <i class="ti ti-calendar-plus"></i> Add another schedule (Days After Planting)
           </button>
 
-          <!-- Labor -->
-          <div class="cpi-label section-gap">
-            <i class="ti ti-users"></i>
-            Labor
-          </div>
-          <table class="cpi-tbl">
-            <thead>
-              <tr>
-                <th style="width:42%">Workforce</th>
-                <th style="width:26%">Quantity</th>
-                <th style="width:22%">Cost (₱)</th>
-                <th style="width:10%"></th>
-              </tr>
-            </thead>
-            <tbody id="labBody">
-              <tr>
-                <td><input type="text" value="" placeholder="Workforce type" /></td>
-                <td><input type="text" value="" placeholder="Qty + unit" /></td>
-                <td><input type="number" value="" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>
-                <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
-              </tr>
-            </tbody>
-          </table>
-          <button class="add-row" onclick="addLabRow()">
-            <i class="ti ti-plus"></i> Add labor entry
-          </button>
-
-          <!-- Total -->
           <div class="total-row">
             <span class="tl">
               <i class="ti ti-calculator"></i>
-              Total cost (derived — sum of all materials + labor)
+              Grand Total Cost (derived — sum of all days)
             </span>
             <span class="tv" id="totalCost">₱0.00</span>
           </div>
         </div>
-
       </div>
 
       <!-- ═══ STEP 6: Validation ═══ -->

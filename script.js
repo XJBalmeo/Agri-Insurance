@@ -127,26 +127,123 @@
       recalcTotal();
     }
 
-    function addMatRow() {
-      const tb = document.getElementById('matBody');
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td><input type="text" placeholder="Item name" /></td>' +
-        '<td><input type="text" placeholder="Qty + unit" /></td>' +
-        '<td><input type="number" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>' +
-        '<td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>';
-      tb.appendChild(tr);
+    // --- CPI Dynamic Block Functions ---
+
+function addCPIBlock() {
+  const container = document.getElementById('cpiBlocksContainer');
+  const blockHTML = `
+    <div class="cpi-block">
+      <div class="cpi-block-header">
+        <div class="field" style="max-width:200px; margin-bottom:18px;">
+          <label>Days after planting <span class="req">*</span></label>
+          <input type="number" class="dap-input" placeholder="0" value="" />
+          <p class="field-hint">Integer (5 chars)</p>
+        </div>
+        <button class="btn btn-ghost del-block-btn" onclick="removeCPIBlock(this)" aria-label="Remove Day">
+          <i class="ti ti-trash"></i> Remove Day
+        </button>
+      </div>
+
+      <div class="cpi-label"><i class="ti ti-package"></i> Materials</div>
+      <table class="cpi-tbl">
+        <thead>
+          <tr>
+            <th style="width:42%">Item</th>
+            <th style="width:26%">Quantity</th>
+            <th style="width:22%">Cost (₱)</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody class="mat-body">
+          <tr>
+            <td><input type="text" placeholder="Item name" /></td>
+            <td><input type="text" placeholder="Qty + unit" /></td>
+            <td><input type="number" class="cost-input" placeholder="0.00" oninput="recalcTotal()" /></td>
+            <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="add-row" onclick="addMatRow(this)">
+        <i class="ti ti-plus"></i> Add material entry
+      </button>
+
+      <div class="cpi-label section-gap"><i class="ti ti-users"></i> Labor</div>
+      <table class="cpi-tbl">
+        <thead>
+          <tr>
+            <th style="width:42%">Workforce</th>
+            <th style="width:26%">Quantity</th>
+            <th style="width:22%">Cost (₱)</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody class="lab-body">
+          <tr>
+            <td><input type="text" placeholder="Workforce type" /></td>
+            <td><input type="text" placeholder="Qty + unit" /></td>
+            <td><input type="number" class="cost-input" placeholder="0.00" oninput="recalcTotal()" /></td>
+            <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="add-row" onclick="addLabRow(this)">
+        <i class="ti ti-plus"></i> Add labor entry
+      </button>
+      
+      <hr class="block-divider" />
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', blockHTML);
+}
+
+function removeCPIBlock(btn) {
+  btn.closest('.cpi-block').remove();
+  recalcTotal(); // Update total after removing a whole block
+}
+
+// Notice the (btn) argument - this tells JS exactly WHICH table to add the row to
+function addMatRow(btn) {
+  // Find the table body immediately preceding the button that was clicked
+  const tbody = btn.previousElementSibling.querySelector('tbody');
+  const row = `<tr>
+    <td><input type="text" placeholder="Item name" /></td>
+    <td><input type="text" placeholder="Qty + unit" /></td>
+    <td><input type="number" class="cost-input" placeholder="0.00" oninput="recalcTotal()" /></td>
+    <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
+  </tr>`;
+  tbody.insertAdjacentHTML('beforeend', row);
+}
+
+    function addLabRow(btn) {
+    const tbody = btn.previousElementSibling.querySelector('tbody');
+    const row = `<tr>
+        <td><input type="text" placeholder="Workforce type" /></td>
+        <td><input type="text" placeholder="Qty + unit" /></td>
+        <td><input type="number" class="cost-input" placeholder="0.00" oninput="recalcTotal()" /></td>
+        <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
+    </tr>`;
+    tbody.insertAdjacentHTML('beforeend', row);
     }
 
-    function addLabRow() {
-      const tb = document.getElementById('labBody');
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td><input type="text" placeholder="Workforce type" /></td>' +
-        '<td><input type="text" placeholder="Qty + unit" /></td>' +
-        '<td><input type="number" placeholder="0.00" onchange="recalcTotal()" onkeyup="recalcTotal()" /></td>' +
-        '<td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>';
-      tb.appendChild(tr);
+    function removeRow(btn) {
+    btn.closest('tr').remove();
+    recalcTotal();
+    }
+
+    function recalcTotal() {
+    let total = 0;
+    // Grab ALL inputs with the class .cost-input anywhere on the page
+    const costInputs = document.querySelectorAll('.cost-input');
+    
+    costInputs.forEach(input => {
+        const val = parseFloat(input.value);
+        if (!isNaN(val)) {
+        total += val;
+        }
+    });
+    
+    // Format as PHP Currency
+    document.getElementById('totalCost').innerText = '₱' + total.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
     /* ── Init ── */
