@@ -1,9 +1,3 @@
-/* ═══════════════════════════════════════════════
-   PCIC Insurance — script.js
-   Handles: navigation, tags, toggle, age calc,
-            CPI blocks, total cost, form reset
-═══════════════════════════════════════════════ */
-
 /* ── State ── */
 let cur = 0;
 const TOTAL = 6;
