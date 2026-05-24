@@ -4,515 +4,578 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PCIC High Value Crop Insurance</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    /* Added brief styling for the new peril checkboxes */
-    .checkbox-group {
-      display: flex;
-      gap: 20px;
-      padding-top: 10px;
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Lora', 'Georgia', 'serif'],
+            sans:  ['DM Sans', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            green: {
+              50:  '#E1F5EE',
+              100: '#C8EFE4',
+              200: '#9FE1CB',
+              300: '#5DCAA5',
+              400: '#3DBFA0',
+              500: '#1D9E75',
+              600: '#1D9E75',
+              700: '#0F6E56',
+              800: '#085041',
+              900: '#04342C',
+            },
+          },
+        },
+      },
     }
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-    }
-  </style>
+  </script>
 </head>
 
-<body>
-  <div class="page-bg">
-    <div class="page-wrap">
+<body class="bg-gray-50 min-h-screen font-sans"
+      style="font-family: 'DM Sans', sans-serif;
+             background: radial-gradient(ellipse 80% 60% at 10% -10%, rgba(29,158,117,.10) 0%, transparent 55%),
+                         radial-gradient(ellipse 60% 50% at 95% 110%, rgba(15,110,86,.08) 0%, transparent 55%),
+                         #F9FAFB;">
 
-      <!-- Top bar -->
-      <div class="top-bar">
-        <div class="logo-group">
-          <div class="logo-mark">
-            <i class="ti ti-plant-2"></i>
+  <div class="min-h-screen px-4 py-8 pb-16">
+    <div class="max-w-3xl mx-auto">
+
+      <!-- ── Top bar ── -->
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-green-700 flex items-center justify-center shadow-sm flex-shrink-0">
+            <i class="ti ti-plant-2 text-white text-xl" aria-hidden="true"></i>
           </div>
-          <div class="logo-text">
-            <strong>PCIC Insurance</strong>
-            <span>High Value Crop Insurance System</span>
+          <div style="line-height: 1.2;">
+            <p class="font-serif font-semibold text-green-800 text-sm">PCIC Insurance</p>
+            <p class="text-xs text-gray-400 tracking-wide">High Value Crop Insurance System</p>
           </div>
         </div>
-        <div class="save-badge">
-          <i class="ti ti-device-floppy"></i>
+        <div class="flex items-center gap-1.5 text-xs text-gray-400 bg-white border border-gray-200 rounded-full px-3.5 py-1.5 shadow-sm">
+          <i class="ti ti-device-floppy text-green-500 text-sm" aria-hidden="true"></i>
           Draft auto-saved
         </div>
       </div>
 
-      <!-- Progress -->
-      <div class="progress-wrap">
-        <div class="progress-meta">
-          <span class="step-label" id="stepLabel">Personal Information</span>
-          <span class="step-counter" id="stepCounter">Step 1 of 6</span>
+      <!-- ── Progress card ── -->
+      <div class="bg-white border border-gray-200 rounded-2xl px-6 py-5 mb-4 shadow-sm">
+        <div class="flex justify-between items-baseline mb-3">
+          <span class="font-serif font-semibold text-green-800 text-sm" id="stepLabel">Personal Information</span>
+          <span class="text-xs text-gray-400" id="stepCounter">Step 1 of 6</span>
         </div>
-        <div class="progress-track">
-          <div class="progress-fill" id="progressFill" style="width: 16.67%"></div>
+        <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-4">
+          <div id="progressFill"
+               class="h-full rounded-full"
+               style="width: 16.67%; background: linear-gradient(90deg, #1D9E75, #3DBFA0); transition: width 0.4s ease;"></div>
         </div>
-        <div class="step-pills" id="stepPills">
-          <button class="step-pill active" onclick="goTo(0)">
-            <div class="pill-dot">1</div>
-            <span>Personal</span>
+        <!-- Step pills -->
+        <div class="flex gap-1.5" id="stepPills">
+          <button class="step-pill active flex-1 flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer p-0" onclick="goTo(0)">
+            <div class="pill-dot w-7 h-7 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center text-xs font-medium text-gray-400" style="transition: all 0.18s ease;">1</div>
+            <span class="text-[10px] text-gray-400 whitespace-nowrap">Personal</span>
           </button>
-          <button class="step-pill" onclick="goTo(1)">
-            <div class="pill-dot">2</div>
-            <span>Coverage</span>
+          <button class="step-pill flex-1 flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer p-0" onclick="goTo(1)">
+            <div class="pill-dot w-7 h-7 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center text-xs font-medium text-gray-400" style="transition: all 0.18s ease;">2</div>
+            <span class="text-[10px] text-gray-400 whitespace-nowrap">Coverage</span>
           </button>
-          <button class="step-pill" onclick="goTo(2)">
-            <div class="pill-dot">3</div>
-            <span>Farm</span>
+          <button class="step-pill flex-1 flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer p-0" onclick="goTo(2)">
+            <div class="pill-dot w-7 h-7 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center text-xs font-medium text-gray-400" style="transition: all 0.18s ease;">3</div>
+            <span class="text-[10px] text-gray-400 whitespace-nowrap">Farm</span>
           </button>
-          <button class="step-pill" onclick="goTo(3)">
-            <div class="pill-dot">4</div>
-            <span>Crops</span>
+          <button class="step-pill flex-1 flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer p-0" onclick="goTo(3)">
+            <div class="pill-dot w-7 h-7 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center text-xs font-medium text-gray-400" style="transition: all 0.18s ease;">4</div>
+            <span class="text-[10px] text-gray-400 whitespace-nowrap">Crops</span>
           </button>
-          <button class="step-pill" onclick="goTo(4)">
-            <div class="pill-dot">5</div>
-            <span>CPI</span>
+          <button class="step-pill flex-1 flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer p-0" onclick="goTo(4)">
+            <div class="pill-dot w-7 h-7 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center text-xs font-medium text-gray-400" style="transition: all 0.18s ease;">5</div>
+            <span class="text-[10px] text-gray-400 whitespace-nowrap">CPI</span>
           </button>
-          <button class="step-pill" onclick="goTo(5)">
-            <div class="pill-dot">6</div>
-            <span>Validation</span>
+          <button class="step-pill flex-1 flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer p-0" onclick="goTo(5)">
+            <div class="pill-dot w-7 h-7 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center text-xs font-medium text-gray-400" style="transition: all 0.18s ease;">6</div>
+            <span class="text-[10px] text-gray-400 whitespace-nowrap">Validation</span>
           </button>
         </div>
       </div>
 
-      <!-- ═══ STEP 1: Personal Info ═══ -->
+      <!-- ════════════════════════════════
+           STEP 1 — Personal Information
+      ════════════════════════════════ -->
       <div class="step-page active" id="page-0">
 
-        <div class="card">
-          <div class="card-title">
-            <i class="ti ti-user-circle"></i>
-            Personal Information
-          </div>
-          <div class="fg fg-2">
-            <div class="field span2">
-              <label>Name of proposer <span class="req">*</span></label>
-              <input type="text" id="proposerName" placeholder="Enter Full Name"/>
+        <!-- Personal info card -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
+          <h3 class="font-serif font-semibold text-green-800 text-sm flex items-center gap-2 pb-3 mb-4 border-b border-green-50">
+            <i class="ti ti-user-circle text-green-500 text-base" aria-hidden="true"></i>
+            Personal information
+          </h3>
+          <div class="grid grid-cols-2 gap-3.5">
+
+            <div class="col-span-2 flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Name of proposer <span class="text-red-500">*</span></label>
+              <input type="text" id="proposerName" placeholder="Enter full name" class="field-input" />
             </div>
-            <div class="field span2">
-              <label>Address <span class="req">*</span> <span class="lbadge">Street, Brgy, Municipality, Province, Zip</span></label>
-              <input type="text" id="address" placeholder="Enter complete address"/>
+
+            <div class="col-span-2 flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                Address <span class="text-red-500">*</span>
+                <span class="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Street, Brgy, Municipality, Province, Zip</span>
+              </label>
+              <input type="text" id="address" placeholder="Enter complete address" class="field-input" />
             </div>
-            <div class="field">
-              <label>Birthday <span class="req">*</span></label>
-              <input type="date" id="Enter birthday" placeholder="Enter birthday"/>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Birthday <span class="text-red-500">*</span></label>
+              <input type="date" id="birthday" class="field-input" />
             </div>
-            <div class="field">
-              <label>Civil status <span class="req">*</span></label>
-              <select id="civilStatus">
-                <option value="" selected>Select status</option>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Civil status <span class="text-red-500">*</span></label>
+              <select id="civilStatus" class="field-input field-select">
+                <option value="">Select status</option>
                 <option value="S">Single</option>
                 <option value="M">Married</option>
                 <option value="W">Widowed</option>
                 <option value="SE">Separated</option>
               </select>
             </div>
-            <div class="field">
-              <label>Sex <span class="req">*</span></label>
-              <select id="sex">
-                <option value="" selected>Select</option>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Sex <span class="text-red-500">*</span></label>
+              <select id="sex" class="field-input field-select">
+                <option value="">Select</option>
                 <option value="M">Male</option>
                 <option value="F">Female</option>
               </select>
             </div>
-            <div class="field">
-              <label>Beneficiary <span class="req">*</span></label>
-              <input type="text" id="beneficiary" placeholder="Enter beneficiary's full name"/>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Beneficiary <span class="text-red-500">*</span></label>
+              <input type="text" id="beneficiary" placeholder="Enter beneficiary's full name" class="field-input" />
             </div>
-            <div class="field">
-              <label>Spouse <span class="lbadge">if applicable</span></label>
-              <input type="text" id="spouse" placeholder="Enter spouse's full name"/>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                Spouse
+                <span class="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">if applicable</span>
+              </label>
+              <input type="text" id="spouse" placeholder="Enter spouse's full name" class="field-input" />
             </div>
-            <div class="field">
-              <label>Spouse birthday <span class="lbadge">if applicable</span></label>
-              <input type="date" id="spouseBday"/>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                Spouse birthday
+                <span class="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">if applicable</span>
+              </label>
+              <input type="date" id="spouseBday" class="field-input" />
             </div>
+
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">
-            <i class="ti ti-phone"></i>
+        <!-- Contact numbers card -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
+          <h3 class="font-serif font-semibold text-green-800 text-sm flex items-center gap-2 pb-3 mb-4 border-b border-green-50">
+            <i class="ti ti-phone text-green-500 text-base" aria-hidden="true"></i>
             Contact numbers
-            <span class="ct-badge">Multi-valued — press Enter to add</span>
-          </div>
+            <span class="ml-auto text-[10px] font-sans font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Multi-valued — press Enter to add</span>
+          </h3>
           <div class="tag-wrap" id="contactWrap" onclick="this.querySelector('.tag-input').focus()">
             <input class="tag-input" type="tel" placeholder="Add number and press Enter..." onkeydown="addTag(event,'contactWrap')" />
           </div>
-          <p class="tag-hint" style="margin-top:6px;">Mobile or landline numbers accepted</p>
+          <p class="text-[11px] text-gray-400 mt-1.5">Mobile or landline numbers accepted</p>
         </div>
 
-        <div class="card">
-          <div class="card-title">
-            <i class="ti ti-users-group"></i>
+        <!-- IP profile card -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
+          <h3 class="font-serif font-semibold text-green-800 text-sm flex items-center gap-2 pb-3 mb-4 border-b border-green-50">
+            <i class="ti ti-users-group text-green-500 text-base" aria-hidden="true"></i>
             Indigenous people (IP) profile
-          </div>
-          <div class="toggle-row">
-            <label class="toggle-sw">
-              <input type="checkbox" id="ipToggle" onchange="toggleTribe()" />
-              <span class="sw-track"></span>
+          </h3>
+          <div class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+            <label class="toggle-sw relative flex-shrink-0" style="width:38px; height:22px;">
+              <input type="checkbox" id="ipToggle" class="absolute opacity-0 w-0 h-0" onchange="toggleTribe()" />
+              <span class="sw-track absolute inset-0 rounded-full cursor-pointer" style="background: #D1D5DB; transition: background 0.18s ease;"></span>
             </label>
-            <span class="toggle-label">This proposer is a member of an Indigenous Tribe</span>
+            <span class="text-sm text-gray-700">This proposer is a member of an Indigenous Tribe</span>
           </div>
-          <div id="tribeField" style="margin-top:12px; display:none;">
-            <div class="field">
-              <label>Tribe name</label>
-              <input type="text" id="tribe" placeholder="e.g. Aeta, Mangyan, Lumad" />
+          <div id="tribeField" class="mt-3 hidden">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Tribe name</label>
+              <input type="text" id="tribe" placeholder="e.g. Aeta, Mangyan, Lumad" class="field-input" />
             </div>
           </div>
         </div>
 
       </div>
 
-      <!-- ═══ STEP 2: Insurance Coverage ═══ -->
+      <!-- ════════════════════════════════
+           STEP 2 — Insurance Coverage
+      ════════════════════════════════ -->
       <div class="step-page" id="page-1">
 
-        <div class="card">
-          <div class="card-title">
-            <i class="ti ti-shield-check"></i>
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
+          <h3 class="font-serif font-semibold text-green-800 text-sm flex items-center gap-2 pb-3 mb-4 border-b border-green-50">
+            <i class="ti ti-shield-check text-green-500 text-base" aria-hidden="true"></i>
             Insurance coverage details
-          </div>
-          <div class="fg fg-2">
-            <div class="field">
-              <label>Crops <span class="req">*</span></label>
-              <input type="text" id="crops" placeholder="Type of crop" value="" />
+          </h3>
+          <div class="grid grid-cols-2 gap-3.5">
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Crops <span class="text-red-500">*</span></label>
+              <input type="text" id="crops" placeholder="Type of crop" class="field-input" />
             </div>
-            <div class="field">
-              <label>Plantation size (ha) <span class="req">*</span></label>
-              <input type="number" id="plantationSize" step="0.01" placeholder="0.00" value="" />
-              <p class="field-hint">Total size in hectares (up to 5 decimal places)</p>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Plantation size (ha) <span class="text-red-500">*</span></label>
+              <input type="number" id="plantationSize" step="0.01" placeholder="0.00" class="field-input" />
+              <p class="text-[11px] text-gray-400">Total size in hectares</p>
             </div>
-            <div class="field">
-              <label>Coverage from <span class="req">*</span></label>
-              <input type="date" id="coverageStart" value="" />
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Coverage from <span class="text-red-500">*</span></label>
+              <input type="date" id="coverageStart" class="field-input" />
             </div>
-            <div class="field">
-              <label>Coverage to <span class="req">*</span></label>
-              <input type="date" id="coverageEnd" value="" />
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Coverage to <span class="text-red-500">*</span></label>
+              <input type="date" id="coverageEnd" class="field-input" />
             </div>
-            <div class="field span2">
-              <label>Desired amount of cover (₱) <span class="req">*</span></label>
-              <input type="number" id="desiredCover" placeholder="0" value="" />
-              <p class="field-hint">Integer value in Philippine Peso (up to 5 digits)</p>
+
+            <div class="col-span-2 flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Desired amount of cover (₱) <span class="text-red-500">*</span></label>
+              <input type="number" id="desiredCover" placeholder="0" class="field-input" />
+              <p class="text-[11px] text-gray-400">Integer value in Philippine Peso (up to 5 digits)</p>
             </div>
+
           </div>
         </div>
 
-              <div class="card">
-        <div class="card-title">
-          <i class="ti ti-bolt"></i>
-          Perils to be covered
+        <!-- Perils card — checkboxes -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
+          <h3 class="font-serif font-semibold text-green-800 text-sm flex items-center gap-2 pb-3 mb-4 border-b border-green-50">
+            <i class="ti ti-bolt text-green-500 text-base" aria-hidden="true"></i>
+            Perils to be covered
+          </h3>
+          <div class="flex flex-col sm:flex-row gap-4">
+
+            <label class="custom-checkbox-label">
+              <input type="checkbox" id="perilDrought" value="Drought" />
+              <span class="checkmark"></span>
+              Drought
+            </label>
+
+            <label class="custom-checkbox-label">
+              <input type="checkbox" id="perilTyphoon" value="Typhoon" />
+              <span class="checkmark"></span>
+              Typhoon
+            </label>
+
+            <label class="custom-checkbox-label">
+              <input type="checkbox" id="perilPest" value="Pest Infestation" />
+              <span class="checkmark"></span>
+              Pest Infestation
+            </label>
+          </div>
         </div>
-        <div class="checkbox-group">
-          <label class="custom-checkbox-label">
-            <input type="checkbox" id="perilDrought" value="Drought" />
-            <span class="checkmark"></span>
-            Drought
-          </label>
-          <label class="custom-checkbox-label">
-            <input type="checkbox" id="perilTyphoon" value="Typhoon" />
-            <span class="checkmark"></span>
-            Typhoon
-          </label>
-          <label class="custom-checkbox-label">
-            <input type="checkbox" id="perilPest" value="Pest Infestation" />
-            <span class="checkmark"></span>
-            Pest Infestation
-          </label>
-        </div>
+
       </div>
-            </div>
 
-      <!-- ═══ STEP 3: Farm Overview ═══ -->
+      <!-- ════════════════════════════════
+           STEP 3 — Farm Overview
+      ════════════════════════════════ -->
       <div class="step-page" id="page-2">
 
-        <div class="card">
-          <div class="card-title">
-            <i class="ti ti-map-pin"></i>
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
+          <h3 class="font-serif font-semibold text-green-800 text-sm flex items-center gap-2 pb-3 mb-4 border-b border-green-50">
+            <i class="ti ti-map-pin text-green-500 text-base" aria-hidden="true"></i>
             Farm overview
-          </div>
-          <div class="fg fg-2">
-            <div class="field span2">
-              <label>Name of plantation / coop / LI / farmer <span class="req">*</span></label>
-              <input type="text" id="plantationName" placeholder="Enter plantation name" value="" />
+          </h3>
+          <div class="grid grid-cols-2 gap-3.5">
+
+            <div class="col-span-2 flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Name of plantation / coop / LI / farmer <span class="text-red-500">*</span></label>
+              <input type="text" id="plantationName" placeholder="Enter plantation name" class="field-input" />
             </div>
-            <div class="field span2">
-              <label>Farm address <span class="req">*</span> <span class="lbadge">Sitio, Brgy, Municipality, Province</span></label>
-              <input type="text" id="farmAddress" placeholder="Complete farm location" value="" />
+
+            <div class="col-span-2 flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                Farm address <span class="text-red-500">*</span>
+                <span class="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Sitio, Brgy, Municipality, Province</span>
+              </label>
+              <input type="text" id="farmAddress" placeholder="Complete farm location" class="field-input" />
             </div>
-            <div class="field">
-              <label>Farm area (ha) <span class="req">*</span></label>
-              <input type="number" id="farmArea" step="0.01" placeholder="0.00" value="" />
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Farm area (ha) <span class="text-red-500">*</span></label>
+              <input type="number" id="farmArea" step="0.01" placeholder="0.00" class="field-input" />
             </div>
-            <div class="field">
-              <label>Soil type <span class="req">*</span></label>
-              <input type="text" id="soilType" placeholder="e.g. Clay Loam, Sandy" value="" />
-              <p class="field-hint">varchar(10)</p>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Soil type <span class="text-red-500">*</span></label>
+              <input type="text" id="soilType" placeholder="e.g. Clay Loam, Sandy" class="field-input" />
+              <p class="text-[11px] text-gray-400">varchar(10)</p>
             </div>
-            <div class="field">
-              <label>Soil pH <span class="req">*</span> <span class="lbadge">0 &lt; pH &lt; 15</span></label>
-              <input type="number" id="soilPH" step="0.1" min="0.1" max="14.9" placeholder="0.0" value="" />
-              <p class="field-hint">Float, 3 characters max</p>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                Soil pH <span class="text-red-500">*</span>
+                <span class="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">0 &lt; pH &lt; 15</span>
+              </label>
+              <input type="number" id="soilPH" step="0.1" min="0.1" max="14.9" placeholder="0.0" class="field-input" />
+              <p class="text-[11px] text-gray-400">Float, 3 characters max</p>
             </div>
-            <div class="field">
-              <label>Topography <span class="req">*</span></label>
-              <input type="text" id="topography" placeholder="e.g. Flat, Gently Sloping" value="" />
-              <p class="field-hint">varchar(10)</p>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Topography <span class="text-red-500">*</span></label>
+              <input type="text" id="topography" placeholder="e.g. Flat, Gently Sloping" class="field-input" />
+              <p class="text-[11px] text-gray-400">varchar(10)</p>
             </div>
+
           </div>
         </div>
 
       </div>
 
-      <!-- ═══ STEP 4: Crop Variety & Irrigation ═══ -->
+      <!-- ════════════════════════════════
+           STEP 4 — Crop Variety & Irrigation
+      ════════════════════════════════ -->
       <div class="step-page" id="page-3">
 
-        <div class="card">
-          <div class="card-title">
-            <i class="ti ti-seeding"></i>
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
+          <h3 class="font-serif font-semibold text-green-800 text-sm flex items-center gap-2 pb-3 mb-4 border-b border-green-50">
+            <i class="ti ti-seeding text-green-500 text-base" aria-hidden="true"></i>
             Variety planted
-          </div>
-          <div class="fg fg-2">
-            <div class="field span2">
-              <label>Variety <span class="req">*</span></label>
-              <input type="text" id="variety" placeholder="Crop variety name" value="" />
-              <p class="field-hint">varchar(20)</p>
+          </h3>
+          <div class="grid grid-cols-2 gap-3.5">
+
+            <div class="col-span-2 flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Variety <span class="text-red-500">*</span></label>
+              <input type="text" id="variety" placeholder="Crop variety name" class="field-input" />
+              <p class="text-[11px] text-gray-400">varchar(20)</p>
             </div>
-            <div class="field">
-              <label>Area planted (ha) <span class="req">*</span></label>
-              <input type="number" id="areaPlanted" step="0.01" placeholder="0.00" value="" />
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Area planted (ha) <span class="text-red-500">*</span></label>
+              <input type="number" id="areaPlanted" step="0.01" placeholder="0.00" class="field-input" />
             </div>
-            <div class="field">
-              <label>Date of planting <span class="req">*</span></label>
-              <input type="date" id="datePlanting" value="" onchange="calcAge()" />
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Date of planting <span class="text-red-500">*</span></label>
+              <input type="date" id="datePlanting" class="field-input" onchange="calcAge()" />
             </div>
-            <div class="field">
-              <label>Estimated harvest date <span class="req">*</span></label>
-              <input type="date" id="estHarvest" value="" />
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Estimated harvest date <span class="text-red-500">*</span></label>
+              <input type="date" id="estHarvest" class="field-input" />
             </div>
-            <div class="field">
-              <label>Population density (no. of hills) <span class="req">*</span></label>
-              <input type="number" id="hillsNum" placeholder="0" value="" />
-              <p class="field-hint">Total number of hills, integer (7 chars)</p>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Population density (no. of hills) <span class="text-red-500">*</span></label>
+              <input type="number" id="hillsNum" placeholder="0" class="field-input" />
+              <p class="text-[11px] text-gray-400">Integer (7 chars)</p>
             </div>
-            <div class="field span2">
-              <label>Age group <span class="lbadge">derived — auto-calculated</span></label>
-              <div class="derived-display" id="ageGroupDisplay">
-                <i class="ti ti-calculator"></i>
+
+            <div class="col-span-2 flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                Age group
+                <span class="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">derived — auto-calculated</span>
+              </label>
+              <div class="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm"
+                   style="background: #E1F5EE; border: 1px solid rgba(29,158,117,0.25); color: #085041;">
+                <i class="ti ti-calculator text-green-500 text-sm flex-shrink-0" aria-hidden="true"></i>
                 <span id="ageGroup">Calculating from date of planting…</span>
               </div>
-              <p class="field-hint">Computed from Date of Planting to current date. Integer (3 chars) stored in DB.</p>
+              <p class="text-[11px] text-gray-400">Computed from Date of Planting. Integer (3 chars) in DB.</p>
             </div>
+
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">
-            <i class="ti ti-droplet"></i>
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
+          <h3 class="font-serif font-semibold text-green-800 text-sm flex items-center gap-2 pb-3 mb-4 border-b border-green-50">
+            <i class="ti ti-droplet text-green-500 text-base" aria-hidden="true"></i>
             Irrigation &amp; yield
-          </div>
-          <div class="fg fg-3">
-            <div class="field">
-              <label>Irrigation type <span class="req">*</span></label>
-              <input type="text" id="irrigationType" placeholder="e.g. Drip, Sprinkler" value="" />
-              <p class="field-hint">varchar(15)</p>
+          </h3>
+          <div class="grid grid-cols-3 gap-3.5">
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Irrigation type <span class="text-red-500">*</span></label>
+              <input type="text" id="irrigationType" placeholder="e.g. Drip, Sprinkler" class="field-input" />
+              <p class="text-[11px] text-gray-400">varchar(15)</p>
             </div>
-            <div class="field">
-              <label>Number of trees <span class="req">*</span></label>
-              <input type="number" id="treesNum" placeholder="0" value="" />
-              <p class="field-hint">Integer (7 chars)</p>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Number of trees <span class="text-red-500">*</span></label>
+              <input type="number" id="treesNum" placeholder="0" class="field-input" />
+              <p class="text-[11px] text-gray-400">Integer (7 chars)</p>
             </div>
-            <div class="field">
-              <label>Average yield (MT/ha) <span class="req">*</span></label>
-              <input type="number" id="avgYield" step="0.1" placeholder="0.0" value="" />
-              <p class="field-hint">Float (10 chars)</p>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Average yield (MT/ha) <span class="text-red-500">*</span></label>
+              <input type="number" id="avgYield" step="0.1" placeholder="0.0" class="field-input" />
+              <p class="text-[11px] text-gray-400">Float (10 chars)</p>
             </div>
+
           </div>
         </div>
 
       </div>
 
-      <!-- ═══ STEP 5: CPI ═══ -->
-        <div class="step-page" id="page-4">
-        <div class="card">
-          <div class="card-title">
-            <i class="ti ti-chart-bar"></i>
+      <!-- ════════════════════════════════
+           STEP 5 — CPI
+      ════════════════════════════════ -->
+      <div class="step-page" id="page-4">
+
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
+          <h3 class="font-serif font-semibold text-green-800 text-sm flex items-center gap-2 pb-3 mb-4 border-b border-green-50">
+            <i class="ti ti-chart-bar text-green-500 text-base" aria-hidden="true"></i>
             Cost of production inputs (CPI)
-          </div>
+          </h3>
 
           <div id="cpiBlocksContainer">
-            
-            <div class="cpi-block">
-              <div class="cpi-block-header">
-                <div class="field" style="max-width:200px; margin-bottom:18px;">
-                  <label>Days after planting <span class="req">*</span></label>
-                  <input type="number" class="dap-input" placeholder="0" value="" />
-                  <p class="field-hint">Integer (5 chars)</p>
-                </div>
-                </div>
+            <!-- CPI blocks injected by JS -->
+          </div>
 
-              <div class="cpi-label">
-                <i class="ti ti-package"></i>
-                Materials
-              </div>
-              <table class="cpi-tbl">
-                <thead>
-                  <tr>
-                    <th style="width:42%">Item</th>
-                    <th style="width:26%">Quantity</th>
-                    <th style="width:22%">Cost (₱)</th>
-                    <th style="width:10%"></th>
-                  </tr>
-                </thead>
-                <tbody class="mat-body">
-                  <tr>
-                    <td><input type="text" value="" placeholder="Item name" /></td>
-                    <td><input type="text" value="" placeholder="Qty + unit" /></td>
-                    <td><input type="number" class="cost-input" value="" placeholder="0.00" oninput="recalcTotal()" /></td>
-                    <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
-                  </tr>
-                </tbody>
-              </table>
-              <button class="add-row" onclick="addMatRow(this)">
-                <i class="ti ti-plus"></i> Add material entry
-              </button>
-
-              <div class="cpi-label section-gap">
-                <i class="ti ti-users"></i>
-                Labor
-              </div>
-              <table class="cpi-tbl">
-                <thead>
-                  <tr>
-                    <th style="width:42%">Workforce</th>
-                    <th style="width:26%">Quantity</th>
-                    <th style="width:22%">Cost (₱)</th>
-                    <th style="width:10%"></th>
-                  </tr>
-                </thead>
-                <tbody class="lab-body">
-                  <tr>
-                    <td><input type="text" value="" placeholder="Workforce type" /></td>
-                    <td><input type="text" value="" placeholder="Qty + unit" /></td>
-                    <td><input type="number" class="cost-input" value="" placeholder="0.00" oninput="recalcTotal()" /></td>
-                    <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
-                  </tr>
-                </tbody>
-              </table>
-              <button class="add-row" onclick="addLabRow(this)">
-                <i class="ti ti-plus"></i> Add labor entry
-              </button>
-              
-              <hr class="block-divider" />
-            </div>
-            </div>
-
-          <button class="add-block-btn" onclick="addCPIBlock()">
-            <i class="ti ti-calendar-plus"></i> Add another schedule (Days After Planting)
+          <button onclick="addCPIBlock()"
+            class="w-full mt-3 py-3 text-sm font-medium text-green-700 bg-white border border-green-600 rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-green-50 transition-all shadow-sm"
+            style="transition: all 0.18s ease;">
+            <i class="ti ti-calendar-plus text-base" aria-hidden="true"></i>
+            Add another schedule (Days after planting)
           </button>
 
-          <div class="total-row">
-            <span class="tl">
-              <i class="ti ti-calculator"></i>
-              Grand Total Cost (derived — sum of all days)
+          <!-- Grand total -->
+          <div class="flex items-center justify-between mt-4 rounded-xl px-4 py-3"
+               style="background: #E1F5EE; border: 1px solid rgba(29,158,117,0.25);">
+            <span class="text-xs font-medium flex items-center gap-1.5" style="color: #085041;">
+              <i class="ti ti-calculator text-green-600 text-sm" aria-hidden="true"></i>
+              Grand total cost (derived — sum of all schedules)
             </span>
-            <span class="tv" id="totalCost">₱0.00</span>
+            <span class="font-serif font-semibold text-lg" style="color: #085041;" id="totalCost">₱0.00</span>
           </div>
+
         </div>
+
       </div>
 
-      <!-- ═══ STEP 6: Validation ═══ -->
+      <!-- ════════════════════════════════
+           STEP 6 — Validation & Signatures
+      ════════════════════════════════ -->
       <div class="step-page" id="page-5">
 
-        <div class="card">
-          <div class="card-title">
-            <i class="ti ti-certificate"></i>
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
+          <h3 class="font-serif font-semibold text-green-800 text-sm flex items-center gap-2 pb-3 mb-4 border-b border-green-50">
+            <i class="ti ti-certificate text-green-500 text-base" aria-hidden="true"></i>
             Validation &amp; signatures
-          </div>
-          <div class="fg fg-2">
-            <div class="field span2">
-              <label>Name of supervising production technician <span class="req">*</span></label>
-              <input type="text" id="supervisingPT" placeholder="Full name" value="" />
-              <p class="field-hint">varchar(30)</p>
+          </h3>
+          <div class="grid grid-cols-2 gap-3.5">
+
+            <div class="col-span-2 flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Name of supervising production technician <span class="text-red-500">*</span></label>
+              <input type="text" id="supervisingPT" placeholder="Full name" class="field-input" />
+              <p class="text-[11px] text-gray-400">varchar(30)</p>
             </div>
-            <div class="field">
-              <label>PT signature date <span class="req">*</span></label>
-              <input type="date" id="ptDate" value="" />
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">PT signature date <span class="text-red-500">*</span></label>
+              <input type="date" id="ptDate" class="field-input" />
             </div>
-            <div class="field">
-              <label>Proposer date <span class="req">*</span></label>
-              <input type="date" id="proposeDate" value="" />
-              <p class="field-hint">Default: system date</p>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600">Proposer date <span class="text-red-500">*</span></label>
+              <input type="date" id="proposeDate" class="field-input" />
+              <p class="text-[11px] text-gray-400">Default: system date</p>
             </div>
-            <div class="field span2">
-              <label>Signature — supervising PT <span class="lbadge">backend integration</span></label>
-              <div class="sig-box">
-                <i class="ti ti-pencil"></i>
+
+            <div class="col-span-2 flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                Signature — supervising PT
+                <span class="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">backend integration</span>
+              </label>
+              <div class="sig-box h-24 bg-gray-50 rounded-xl flex flex-col items-center justify-center gap-1.5 text-gray-400 text-xs"
+                   style="border: 1.5px dashed #D1D5DB;">
+                <i class="ti ti-pencil text-xl text-gray-300" aria-hidden="true"></i>
                 Signature capture area
               </div>
             </div>
-            <div class="field span2">
-              <label>Signature — proposer <span class="lbadge">backend integration</span></label>
-              <div class="sig-box">
-                <i class="ti ti-pencil"></i>
+
+            <div class="col-span-2 flex flex-col gap-1">
+              <label class="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                Signature — proposer
+                <span class="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">backend integration</span>
+              </label>
+              <div class="sig-box h-24 bg-gray-50 rounded-xl flex flex-col items-center justify-center gap-1.5 text-gray-400 text-xs"
+                   style="border: 1.5px dashed #D1D5DB;">
+                <i class="ti ti-pencil text-xl text-gray-300" aria-hidden="true"></i>
                 Signature capture area
               </div>
             </div>
+
           </div>
         </div>
 
-        <div class="callout green">
-          <i class="ti ti-info-circle"></i>
-          <div class="callout-body">
-            <strong>Ready to submit</strong>
-            Review all sections before submitting. Derived fields (Age Group, Total Cost) are
-            computed automatically and will not be stored directly — they are calculated by the
-            backend from base data.
+        <div class="flex items-start gap-3 rounded-2xl px-5 py-4 mb-4 text-sm"
+             style="background: #E1F5EE; border: 1px solid rgba(29,158,117,0.25); color: #085041;">
+          <i class="ti ti-info-circle text-green-500 text-base mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+          <div>
+            <p class="font-medium mb-1">Ready to submit</p>
+            <p class="text-xs leading-relaxed" style="color: #0F6E56;">Review all sections before submitting. Derived fields (Age Group, Total Cost) are computed automatically and will not be stored directly — they are recalculated by the backend from base data.</p>
           </div>
         </div>
 
       </div>
 
-      <!-- ═══ SUCCESS ═══ -->
+      <!-- ════════════════════════════════
+           SUCCESS
+      ════════════════════════════════ -->
       <div class="step-page" id="page-success">
-        <div class="card success-wrap">
-          <div class="success-icon">
-            <i class="ti ti-circle-check"></i>
+        <div class="bg-white border border-gray-200 rounded-2xl p-10 text-center shadow-sm">
+          <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
+               style="background: #E1F5EE; border: 2px solid rgba(29,158,117,0.3);">
+            <i class="ti ti-circle-check text-4xl" style="color: #0F6E56;" aria-hidden="true"></i>
           </div>
-          <h2>Application submitted</h2>
-          <p>
-            Your PCIC High Value Crop Insurance application has been received
-            and is now pending review by a supervising production technician.
+          <h2 class="font-serif font-semibold text-xl mb-2" style="color: #085041;">Application submitted</h2>
+          <p class="text-sm text-gray-400 max-w-sm mx-auto leading-relaxed">
+            Your PCIC High Value Crop Insurance application has been received and is now pending review by a supervising production technician.
           </p>
-          <div class="ref-pill">
-            <i class="ti ti-file-check" style="font-size:16px;"></i>
-            Reference no. <strong>PCIC-2026-00142</strong>
+          <div class="inline-flex items-center gap-2.5 mt-6 rounded-full px-6 py-3 text-sm"
+               style="background: #E1F5EE; border: 1px solid rgba(29,158,117,0.3); color: #085041;">
+            <i class="ti ti-file-check text-base" style="color: #1D9E75;" aria-hidden="true"></i>
+            Reference no. <strong class="font-serif text-base font-semibold ml-1" style="color: #0F6E56; letter-spacing: 0.04em;">PCIC-2026-00142</strong>
           </div>
-          <p>You will be contacted within 3–5 business days.</p>
-          <button class="btn btn-ghost new-btn" onclick="resetForm()">
-            <i class="ti ti-plus"></i> New application
+          <p class="text-xs text-gray-400 mt-4">You will be contacted within 3–5 business days.</p>
+          <button onclick="resetForm()"
+            class="mt-6 inline-flex items-center gap-2 text-sm text-gray-500 bg-white border border-gray-200 rounded-xl px-5 py-2.5 cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-all">
+            <i class="ti ti-plus text-sm" aria-hidden="true"></i> New application
           </button>
         </div>
       </div>
 
-      <!-- Footer nav -->
-      <div class="form-footer" id="formFooter">
-        <button class="btn btn-ghost" id="btnBack" onclick="prevStep()" style="visibility:hidden;">
-          <i class="ti ti-arrow-left"></i> Back
+      <!-- ── Footer nav ── -->
+      <div class="flex items-center justify-between mt-5 pt-4 border-t border-gray-200" id="formFooter">
+        <button id="btnBack" onclick="prevStep()" style="visibility:hidden;"
+          class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl px-5 py-2.5 cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">
+          <i class="ti ti-arrow-left text-sm" aria-hidden="true"></i> Back
         </button>
-        <button class="btn btn-primary" id="btnNext" onclick="nextStep()">
-          Next <i class="ti ti-arrow-right"></i>
+        <button id="btnNext" onclick="nextStep()"
+          class="inline-flex items-center gap-2 text-sm font-medium text-white rounded-xl px-6 py-2.5 cursor-pointer shadow-md transition-all"
+          style="background: #0F6E56; box-shadow: 0 2px 8px rgba(15,110,86,0.3);">
+          Next <i class="ti ti-arrow-right text-sm" aria-hidden="true"></i>
         </button>
       </div>
+
     </div>
   </div>
+
   <script src="script.js"></script>
 </body>
 </html>

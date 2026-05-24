@@ -1,251 +1,276 @@
+/* ═══════════════════════════════════════════════
+   PCIC Insurance — script.js
+   Handles: navigation, tags, toggle, age calc,
+            CPI blocks, total cost, form reset
+═══════════════════════════════════════════════ */
+
 /* ── State ── */
-    let cur = 0;
-    const TOTAL = 6;
-    const LABELS = [
-      'Personal Information',
-      'Insurance Coverage',
-      'Farm Overview',
-      'Crop Variety & Irrigation',
-      'Cost of Production Inputs',
-      'Validation & Signatures'
-    ];
+let cur = 0;
+const TOTAL = 6;
+const LABELS = [
+  'Personal Information',
+  'Insurance Coverage',
+  'Farm Overview',
+  'Crop Variety & Irrigation',
+  'Cost of Production Inputs',
+  'Validation & Signatures',
+];
 
-    /* ── Navigation ── */
-    function goTo(n) {
-      if (n > cur) return;
-      document.getElementById('page-' + cur).classList.remove('active');
-      cur = n;
-      document.getElementById('page-' + cur).classList.add('active');
-      syncNav();
-    }
+/* ── Navigation ── */
+function goTo(n) {
+  if (n > cur) return;
+  document.getElementById('page-' + cur).classList.remove('active');
+  cur = n;
+  document.getElementById('page-' + cur).classList.add('active');
+  syncNav();
+}
 
-    function nextStep() {
-      if (cur === TOTAL - 1) {
-        document.getElementById('page-' + cur).classList.remove('active');
-        document.getElementById('page-success').classList.add('active');
-        document.getElementById('formFooter').style.display = 'none';
-        updatePills(TOTAL);
-        document.getElementById('stepLabel').textContent = 'Application Submitted';
-        document.getElementById('stepCounter').textContent = 'Complete';
-        document.getElementById('progressFill').style.width = '100%';
-        return;
-      }
-      document.getElementById('page-' + cur).classList.remove('active');
-      cur++;
-      document.getElementById('page-' + cur).classList.add('active');
-      syncNav();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+function nextStep() {
+  if (cur === TOTAL - 1) {
+    document.getElementById('page-' + cur).classList.remove('active');
+    document.getElementById('page-success').classList.add('active');
+    document.getElementById('formFooter').style.display = 'none';
+    updatePills(TOTAL);
+    document.getElementById('stepLabel').textContent = 'Application Submitted';
+    document.getElementById('stepCounter').textContent = 'Complete';
+    document.getElementById('progressFill').style.width = '100%';
+    return;
+  }
+  document.getElementById('page-' + cur).classList.remove('active');
+  cur++;
+  document.getElementById('page-' + cur).classList.add('active');
+  syncNav();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-    function prevStep() {
-      if (cur === 0) return;
-      document.getElementById('page-' + cur).classList.remove('active');
-      cur--;
-      document.getElementById('page-' + cur).classList.add('active');
-      syncNav();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+function prevStep() {
+  if (cur === 0) return;
+  document.getElementById('page-' + cur).classList.remove('active');
+  cur--;
+  document.getElementById('page-' + cur).classList.add('active');
+  syncNav();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-    function syncNav() {
-      document.getElementById('btnBack').style.visibility = cur === 0 ? 'hidden' : 'visible';
-      const btn = document.getElementById('btnNext');
-      if (cur === TOTAL - 1) {
-        btn.className = 'btn btn-submit';
-        btn.innerHTML = '<i class="ti ti-send"></i> Submit application';
-      } else {
-        btn.className = 'btn btn-primary';
-        btn.innerHTML = 'Next <i class="ti ti-arrow-right"></i>';
-      }
-      document.getElementById('stepLabel').textContent = LABELS[cur];
-      document.getElementById('stepCounter').textContent = 'Step ' + (cur + 1) + ' of ' + TOTAL;
-      document.getElementById('progressFill').style.width = ((cur + 1) / TOTAL * 100).toFixed(2) + '%';
-      updatePills(cur);
-    }
+function syncNav() {
+  const btnBack = document.getElementById('btnBack');
+  const btnNext = document.getElementById('btnNext');
 
-    function updatePills(active) {
-      document.querySelectorAll('.step-pill').forEach((p, i) => {
-        p.classList.remove('active', 'done');
-        if (i === active) p.classList.add('active');
-        else if (i < active) p.classList.add('done');
-      });
-    }
+  btnBack.style.visibility = cur === 0 ? 'hidden' : 'visible';
 
-    function resetForm() {
-      location.reload();
-    }
+  if (cur === TOTAL - 1) {
+    btnNext.innerHTML = '<i class="ti ti-send text-sm" aria-hidden="true"></i> Submit application';
+    btnNext.style.background = '#BA7517';
+    btnNext.style.boxShadow = '0 2px 8px rgba(186,117,23,0.3)';
+  } else {
+    btnNext.innerHTML = 'Next <i class="ti ti-arrow-right text-sm" aria-hidden="true"></i>';
+    btnNext.style.background = '#0F6E56';
+    btnNext.style.boxShadow = '0 2px 8px rgba(15,110,86,0.3)';
+  }
 
-    /* ── Tag input ── */
-    function addTag(e, wrapId) {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      const wrap = document.getElementById(wrapId);
-      const input = wrap.querySelector('.tag-input');
-      const val = input.value.trim();
-      if (!val) return;
-      const tag = document.createElement('span');
-      tag.className = 'tag';
-      tag.innerHTML = val + ' <button onclick="removeTag(this)" aria-label="Remove">×</button>';
-      wrap.insertBefore(tag, input);
-      input.value = '';
-    }
+  document.getElementById('stepLabel').textContent = LABELS[cur];
+  document.getElementById('stepCounter').textContent = 'Step ' + (cur + 1) + ' of ' + TOTAL;
+  document.getElementById('progressFill').style.width = ((cur + 1) / TOTAL * 100).toFixed(2) + '%';
+  updatePills(cur);
+}
 
-    function removeTag(btn) {
-      btn.parentElement.remove();
-    }
+function updatePills(active) {
+  document.querySelectorAll('.step-pill').forEach(function (p, i) {
+    p.classList.remove('active', 'done');
+    if (i === active) p.classList.add('active');
+    else if (i < active) p.classList.add('done');
+  });
+}
 
-    /* ── IP tribe toggle ── */
-    function toggleTribe() {
-      const on = document.getElementById('ipToggle').checked;
-      document.getElementById('tribeField').style.display = on ? 'block' : 'none';
-    }
+function resetForm() {
+  location.reload();
+}
 
-    /* ── Age group calculation (derived) ── */
-    function calcAge() {
-      const dp = document.getElementById('datePlanting').value;
-      if (!dp) return;
-      const planted = new Date(dp);
-      const now = new Date();
-      let yrs = now.getFullYear() - planted.getFullYear();
-      let mos = now.getMonth() - planted.getMonth();
-      if (mos < 0) { yrs--; mos += 12; }
-      const label = yrs + ' year' + (yrs !== 1 ? 's' : '') + (mos ? ', ' + mos + ' month' + (mos !== 1 ? 's' : '') : '');
-      document.getElementById('ageGroup').textContent = label + ' — Age group: ' + yrs;
-    }
+/* ── Tag input (multi-valued fields) ── */
+function addTag(e, wrapId) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  var wrap  = document.getElementById(wrapId);
+  var input = wrap.querySelector('.tag-input');
+  var val   = input.value.trim();
+  if (!val) return;
 
-    /* ── CPI total (derived) ── */
-    function recalcTotal() {
-      let total = 0;
-      document.querySelectorAll('#matBody input[type=number], #labBody input[type=number]').forEach(function(inp) {
-        total += parseFloat(inp.value) || 0;
-      });
-      document.getElementById('totalCost').textContent = '₱' + total.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
+  var tag = document.createElement('span');
+  tag.className = 'tag';
+  tag.innerHTML = val + ' <button onclick="removeTag(this)" aria-label="Remove">×</button>';
+  wrap.insertBefore(tag, input);
+  input.value = '';
+}
 
-    /* ── CPI row management ── */
-    function removeRow(btn) {
-      btn.closest('tr').remove();
-      recalcTotal();
-    }
+function removeTag(btn) {
+  btn.parentElement.remove();
+}
 
-    // --- CPI Dynamic Block Functions ---
+/* ── IP / Tribe toggle ── */
+function toggleTribe() {
+  var on    = document.getElementById('ipToggle').checked;
+  var field = document.getElementById('tribeField');
+  field.classList.toggle('hidden', !on);
+}
+
+/* ── Age group (derived) ── */
+function calcAge() {
+  var dp = document.getElementById('datePlanting').value;
+  if (!dp) return;
+
+  var planted = new Date(dp);
+  var now     = new Date();
+  var yrs     = now.getFullYear() - planted.getFullYear();
+  var mos     = now.getMonth()    - planted.getMonth();
+
+  if (mos < 0) { yrs--; mos += 12; }
+
+  var label = yrs + ' year' + (yrs !== 1 ? 's' : '');
+  if (mos) label += ', ' + mos + ' month' + (mos !== 1 ? 's' : '');
+  label += ' — Age group: ' + yrs;
+
+  document.getElementById('ageGroup').textContent = label;
+}
+
+/* ═══════════════════════════════════════════════
+   CPI — Dynamic blocks (one per DAP schedule)
+═══════════════════════════════════════════════ */
+
+function buildCPIBlock(isFirst) {
+  var block = document.createElement('div');
+  block.className = 'cpi-block';
+
+  block.innerHTML =
+    '<div class="cpi-block-header">' +
+      '<div class="flex flex-col gap-1" style="max-width:200px; margin-bottom:14px;">' +
+        '<label class="text-xs font-medium text-gray-600">Days after planting <span class="text-red-500">*</span></label>' +
+        '<input type="number" class="dap-input field-input" placeholder="0" />' +
+        '<p class="text-[11px] text-gray-400">Integer (5 chars)</p>' +
+      '</div>' +
+      (isFirst ? '' :
+        '<button class="del-block-btn" onclick="removeCPIBlock(this)">' +
+          '<i class="ti ti-trash text-sm" aria-hidden="true"></i> Remove schedule' +
+        '</button>'
+      ) +
+    '</div>' +
+
+    '<p class="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-2">' +
+      '<i class="ti ti-package text-green-500 text-sm" aria-hidden="true"></i> Materials' +
+    '</p>' +
+    '<div class="border border-gray-200 rounded-xl overflow-hidden mb-2">' +
+      '<table class="cpi-tbl w-full text-sm">' +
+        '<thead><tr class="bg-gray-50 border-b border-gray-200">' +
+          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:42%">Item</th>' +
+          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:26%">Quantity</th>' +
+          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:22%">Cost (₱)</th>' +
+          '<th style="width:10%"></th>' +
+        '</tr></thead>' +
+        '<tbody class="mat-body">' +
+          '<tr class="border-b border-gray-100">' +
+            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Item name" /></td>' +
+            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
+            '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
+            '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>' +
+          '</tr>' +
+        '</tbody>' +
+      '</table>' +
+    '</div>' +
+    '<button class="add-row" onclick="addMatRow(this)">' +
+      '<i class="ti ti-plus" aria-hidden="true"></i> Add material entry' +
+    '</button>' +
+
+    '<p class="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-2 mt-5">' +
+      '<i class="ti ti-users text-green-500 text-sm" aria-hidden="true"></i> Labor' +
+    '</p>' +
+    '<div class="border border-gray-200 rounded-xl overflow-hidden mb-2">' +
+      '<table class="cpi-tbl w-full text-sm">' +
+        '<thead><tr class="bg-gray-50 border-b border-gray-200">' +
+          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:42%">Workforce</th>' +
+          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:26%">Quantity</th>' +
+          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:22%">Cost (₱)</th>' +
+          '<th style="width:10%"></th>' +
+        '</tr></thead>' +
+        '<tbody class="lab-body">' +
+          '<tr class="border-b border-gray-100">' +
+            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Workforce type" /></td>' +
+            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
+            '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
+            '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>' +
+          '</tr>' +
+        '</tbody>' +
+      '</table>' +
+    '</div>' +
+    '<button class="add-row" onclick="addLabRow(this)">' +
+      '<i class="ti ti-plus" aria-hidden="true"></i> Add labor entry' +
+    '</button>' +
+
+    '<hr class="block-divider" />';
+
+  return block;
+}
 
 function addCPIBlock() {
-  const container = document.getElementById('cpiBlocksContainer');
-  const blockHTML = `
-    <div class="cpi-block">
-      <div class="cpi-block-header">
-        <div class="field" style="max-width:200px; margin-bottom:18px;">
-          <label>Days after planting <span class="req">*</span></label>
-          <input type="number" class="dap-input" placeholder="0" value="" />
-          <p class="field-hint">Integer (5 chars)</p>
-        </div>
-        <button class="btn btn-ghost del-block-btn" onclick="removeCPIBlock(this)" aria-label="Remove Day">
-          <i class="ti ti-trash"></i> Remove Day
-        </button>
-      </div>
-
-      <div class="cpi-label"><i class="ti ti-package"></i> Materials</div>
-      <table class="cpi-tbl">
-        <thead>
-          <tr>
-            <th style="width:42%">Item</th>
-            <th style="width:26%">Quantity</th>
-            <th style="width:22%">Cost (₱)</th>
-            <th style="width:10%"></th>
-          </tr>
-        </thead>
-        <tbody class="mat-body">
-          <tr>
-            <td><input type="text" placeholder="Item name" /></td>
-            <td><input type="text" placeholder="Qty + unit" /></td>
-            <td><input type="number" class="cost-input" placeholder="0.00" oninput="recalcTotal()" /></td>
-            <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
-          </tr>
-        </tbody>
-      </table>
-      <button class="add-row" onclick="addMatRow(this)">
-        <i class="ti ti-plus"></i> Add material entry
-      </button>
-
-      <div class="cpi-label section-gap"><i class="ti ti-users"></i> Labor</div>
-      <table class="cpi-tbl">
-        <thead>
-          <tr>
-            <th style="width:42%">Workforce</th>
-            <th style="width:26%">Quantity</th>
-            <th style="width:22%">Cost (₱)</th>
-            <th style="width:10%"></th>
-          </tr>
-        </thead>
-        <tbody class="lab-body">
-          <tr>
-            <td><input type="text" placeholder="Workforce type" /></td>
-            <td><input type="text" placeholder="Qty + unit" /></td>
-            <td><input type="number" class="cost-input" placeholder="0.00" oninput="recalcTotal()" /></td>
-            <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
-          </tr>
-        </tbody>
-      </table>
-      <button class="add-row" onclick="addLabRow(this)">
-        <i class="ti ti-plus"></i> Add labor entry
-      </button>
-      
-      <hr class="block-divider" />
-    </div>
-  `;
-  container.insertAdjacentHTML('beforeend', blockHTML);
+  var container = document.getElementById('cpiBlocksContainer');
+  container.appendChild(buildCPIBlock(false));
 }
 
 function removeCPIBlock(btn) {
   btn.closest('.cpi-block').remove();
-  recalcTotal(); // Update total after removing a whole block
+  recalcTotal();
 }
 
-// Notice the (btn) argument - this tells JS exactly WHICH table to add the row to
+/* ── Row management ── */
+function removeRow(btn) {
+  btn.closest('tr').remove();
+  recalcTotal();
+}
+
 function addMatRow(btn) {
-  // Find the table body immediately preceding the button that was clicked
-  const tbody = btn.previousElementSibling.querySelector('tbody');
-  const row = `<tr>
-    <td><input type="text" placeholder="Item name" /></td>
-    <td><input type="text" placeholder="Qty + unit" /></td>
-    <td><input type="number" class="cost-input" placeholder="0.00" oninput="recalcTotal()" /></td>
-    <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
-  </tr>`;
-  tbody.insertAdjacentHTML('beforeend', row);
+  var tbody = btn.previousElementSibling.querySelector('.mat-body') ||
+              btn.closest('.cpi-block').querySelector('.mat-body');
+  var tr = document.createElement('tr');
+  tr.className = 'border-b border-gray-100';
+  tr.innerHTML =
+    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Item name" /></td>' +
+    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
+    '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
+    '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>';
+  tbody.appendChild(tr);
 }
 
-    function addLabRow(btn) {
-    const tbody = btn.previousElementSibling.querySelector('tbody');
-    const row = `<tr>
-        <td><input type="text" placeholder="Workforce type" /></td>
-        <td><input type="text" placeholder="Qty + unit" /></td>
-        <td><input type="number" class="cost-input" placeholder="0.00" oninput="recalcTotal()" /></td>
-        <td><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
-    </tr>`;
-    tbody.insertAdjacentHTML('beforeend', row);
-    }
+function addLabRow(btn) {
+  var tbody = btn.closest('.cpi-block').querySelector('.lab-body');
+  var tr = document.createElement('tr');
+  tr.className = 'border-b border-gray-100';
+  tr.innerHTML =
+    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Workforce type" /></td>' +
+    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
+    '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
+    '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>';
+  tbody.appendChild(tr);
+}
 
-    function removeRow(btn) {
-    btn.closest('tr').remove();
-    recalcTotal();
-    }
+/* ── Grand total (derived) ── */
+function recalcTotal() {
+  var total = 0;
+  document.querySelectorAll('.cost-input').forEach(function (inp) {
+    total += parseFloat(inp.value) || 0;
+  });
+  document.getElementById('totalCost').textContent =
+    '₱' + total.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
-    function recalcTotal() {
-    let total = 0;
-    // Grab ALL inputs with the class .cost-input anywhere on the page
-    const costInputs = document.querySelectorAll('.cost-input');
-    
-    costInputs.forEach(input => {
-        const val = parseFloat(input.value);
-        if (!isNaN(val)) {
-        total += val;
-        }
-    });
-    
-    // Format as PHP Currency
-    document.getElementById('totalCost').innerText = '₱' + total.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    }
+/* ── CPI inline input style ── */
+var cpiStyle = document.createElement('style');
+cpiStyle.textContent =
+  '.cpi-input { background: transparent; border: none; outline: none; width: 100%;' +
+  'font-family: "DM Sans", sans-serif; font-size: 0.8125rem; color: #111827;' +
+  'padding: 3px 4px; border-radius: 4px; transition: background 0.15s; }' +
+  '.cpi-input:focus { background: #E1F5EE; }';
+document.head.appendChild(cpiStyle);
 
-    /* ── Init ── */
-    calcAge();
-    recalcTotal();
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', function () {
+  document.getElementById('cpiBlocksContainer').appendChild(buildCPIBlock(true));
+  calcAge();
+});
