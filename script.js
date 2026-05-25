@@ -1,5 +1,9 @@
+/* ── Dev flag — set to false before going to production ── */
+const DEV_MODE = true;
+
 /* ── State ── */
 let cur = 0;
+let maxVisited = 0;
 const TOTAL = 6;
 const LABELS = [
   'Personal Information',
@@ -12,14 +16,32 @@ const LABELS = [
 
 /* ── Navigation ── */
 function goTo(n) {
-  if (n > cur) return;
+  if (n > maxVisited) return;
   document.getElementById('page-' + cur).classList.remove('active');
   cur = n;
   document.getElementById('page-' + cur).classList.add('active');
   syncNav();
 }
 
+function validateStep(stepEl) {
+  const required = stepEl.querySelectorAll('.field-input[required]');
+  let valid = true;
+  required.forEach(el => {
+    if (!el.value.trim()) {
+      el.classList.add('field-error');
+      valid = false;
+    } else {
+      el.classList.remove('field-error');
+    }
+  });
+  return valid;
+}
+
 function nextStep() {
+  if (!DEV_MODE) {
+    const page = document.getElementById('page-' + cur);
+    if (!validateStep(page)) return;
+  }
   if (cur === TOTAL - 1) {
     document.getElementById('page-' + cur).classList.remove('active');
     document.getElementById('page-success').classList.add('active');
@@ -28,13 +50,17 @@ function nextStep() {
     document.getElementById('stepLabel').textContent = 'Application Submitted';
     document.getElementById('stepCounter').textContent = 'Complete';
     document.getElementById('progressFill').style.width = '100%';
+    var ref = 'PCIC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+    document.getElementById('refNumber').textContent = ref;
     return;
   }
   document.getElementById('page-' + cur).classList.remove('active');
   cur++;
+  if (cur > maxVisited) maxVisited = cur;
   document.getElementById('page-' + cur).classList.add('active');
   syncNav();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  focusStepHeading(cur);
 }
 
 function prevStep() {
@@ -44,6 +70,14 @@ function prevStep() {
   document.getElementById('page-' + cur).classList.add('active');
   syncNav();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  focusStepHeading(cur);
+}
+
+function focusStepHeading(n) {
+  var heading = document.querySelector('#page-' + n + ' h3, #page-' + n + ' h2');
+  if (!heading) return;
+  heading.setAttribute('tabindex', '-1');
+  heading.focus();
 }
 
 function syncNav() {
@@ -81,9 +115,7 @@ function resetForm() {
 }
 
 /* ── Tag input (multi-valued fields) ── */
-function addTag(e, wrapId) {
-  if (e.key !== 'Enter') return;
-  e.preventDefault();
+function doAddTag(wrapId) {
   var wrap  = document.getElementById(wrapId);
   var input = wrap.querySelector('.tag-input');
   var val   = input.value.trim();
@@ -91,9 +123,21 @@ function addTag(e, wrapId) {
 
   var tag = document.createElement('span');
   tag.className = 'tag';
-  tag.innerHTML = val + ' <button onclick="removeTag(this)" aria-label="Remove">×</button>';
+  tag.textContent = val + ' ';
+  var btn = document.createElement('button');
+  btn.textContent = '×';
+  btn.setAttribute('aria-label', 'Remove');
+  btn.onclick = function() { removeTag(btn); };
+  tag.appendChild(btn);
   wrap.insertBefore(tag, input);
   input.value = '';
+  input.focus();
+}
+
+function addTag(e, wrapId) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  doAddTag(wrapId);
 }
 
 function removeTag(btn) {
@@ -139,7 +183,7 @@ function buildCPIBlock(isFirst) {
       '<div class="flex flex-col gap-1" style="max-width:200px; margin-bottom:14px;">' +
         '<label class="text-xs font-medium text-gray-600">Days after planting <span class="text-red-500">*</span></label>' +
         '<input type="number" class="dap-input field-input" placeholder="0" />' +
-        '<p class="text-[11px] text-gray-400">Integer (5 chars)</p>' +
+        '<p class="text-[11px] text-gray-400">Whole number, up to 5 digits</p>' +
       '</div>' +
       (isFirst ? '' :
         '<button class="del-block-btn" onclick="removeCPIBlock(this)">' +
@@ -161,9 +205,9 @@ function buildCPIBlock(isFirst) {
         '</tr></thead>' +
         '<tbody class="mat-body">' +
           '<tr class="border-b border-gray-100">' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Item name" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
+            '<td class="px-3 py-2" data-label="Item"><input class="cpi-input" type="text" aria-label="Item name" placeholder="Item name" /></td>' +
+            '<td class="px-3 py-2" data-label="Quantity"><input class="cpi-input" type="text" aria-label="Quantity" placeholder="Qty + unit" /></td>' +
+            '<td class="px-3 py-2" data-label="Cost (₱)"><input class="cpi-input cost-input" type="number" aria-label="Cost in pesos" placeholder="0.00" oninput="recalcTotal()" /></td>' +
             '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>' +
           '</tr>' +
         '</tbody>' +
@@ -186,9 +230,9 @@ function buildCPIBlock(isFirst) {
         '</tr></thead>' +
         '<tbody class="lab-body">' +
           '<tr class="border-b border-gray-100">' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Workforce type" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
+            '<td class="px-3 py-2" data-label="Workforce"><input class="cpi-input" type="text" aria-label="Workforce type" placeholder="Workforce type" /></td>' +
+            '<td class="px-3 py-2" data-label="Quantity"><input class="cpi-input" type="text" aria-label="Quantity" placeholder="Qty + unit" /></td>' +
+            '<td class="px-3 py-2" data-label="Cost (₱)"><input class="cpi-input cost-input" type="number" aria-label="Cost in pesos" placeholder="0.00" oninput="recalcTotal()" /></td>' +
             '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>' +
           '</tr>' +
         '</tbody>' +
@@ -225,9 +269,9 @@ function addMatRow(btn) {
   var tr = document.createElement('tr');
   tr.className = 'border-b border-gray-100';
   tr.innerHTML =
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Item name" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
+    '<td class="px-3 py-2" data-label="Item"><input class="cpi-input" type="text" aria-label="Item name" placeholder="Item name" /></td>' +
+    '<td class="px-3 py-2" data-label="Quantity"><input class="cpi-input" type="text" aria-label="Quantity" placeholder="Qty + unit" /></td>' +
+    '<td class="px-3 py-2" data-label="Cost (₱)"><input class="cpi-input cost-input" type="number" aria-label="Cost in pesos" placeholder="0.00" oninput="recalcTotal()" /></td>' +
     '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>';
   tbody.appendChild(tr);
 }
@@ -237,9 +281,9 @@ function addLabRow(btn) {
   var tr = document.createElement('tr');
   tr.className = 'border-b border-gray-100';
   tr.innerHTML =
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Workforce type" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
+    '<td class="px-3 py-2" data-label="Workforce"><input class="cpi-input" type="text" aria-label="Workforce type" placeholder="Workforce type" /></td>' +
+    '<td class="px-3 py-2" data-label="Quantity"><input class="cpi-input" type="text" aria-label="Quantity" placeholder="Qty + unit" /></td>' +
+    '<td class="px-3 py-2" data-label="Cost (₱)"><input class="cpi-input cost-input" type="number" aria-label="Cost in pesos" placeholder="0.00" oninput="recalcTotal()" /></td>' +
     '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>';
   tbody.appendChild(tr);
 }
@@ -273,25 +317,20 @@ document.addEventListener('DOMContentLoaded', function () {
 function toggleTheme() {
   const htmlEl = document.documentElement;
   const themeIcon = document.querySelector('#themeToggle i');
-  
-  if (htmlEl.getAttribute('data-theme') === 'dark') {
-    // Switch to Light Mode
-    htmlEl.removeAttribute('data-theme');
-    localStorage.setItem('theme', 'light');
-    themeIcon.className = 'ti ti-moon';
-  } else {
-    // Switch to Dark Mode
-    htmlEl.setAttribute('data-theme', 'dark');
-    localStorage.setItem('theme', 'dark');
-    themeIcon.className = 'ti ti-sun';
-  }
+  const isDark = htmlEl.getAttribute('data-theme') === 'dark';
+  if (isDark) htmlEl.removeAttribute('data-theme');
+  else htmlEl.setAttribute('data-theme', 'dark');
+  if (themeIcon) themeIcon.className = isDark ? 'ti ti-moon text-lg' : 'ti ti-sun text-lg';
+  try { localStorage.setItem('theme', isDark ? 'light' : 'dark'); } catch (_) {}
 }
 
 // Check saved theme on page load
 window.addEventListener('DOMContentLoaded', () => {
-  if (localStorage.getItem('theme') === 'dark') {
+  let saved;
+  try { saved = localStorage.getItem('theme'); } catch (_) {}
+  if (saved === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
     const themeIcon = document.querySelector('#themeToggle i');
-    if (themeIcon) themeIcon.className = 'ti ti-sun';
+    if (themeIcon) themeIcon.className = 'ti ti-sun text-lg';
   }
 });
