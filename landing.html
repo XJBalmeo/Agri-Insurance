@@ -209,8 +209,8 @@
     [data-theme="dark"] .text-gray-800 { color: #F9FAFB !important; }
     [data-theme="dark"] .text-gray-500,
     [data-theme="dark"] .text-gray-400 { color: #9CA3AF !important; }
-    [data-theme="dark"] .text-gray-300 { color: #4B5563 !important; }
-    [data-theme="dark"] .text-gray-200 { color: #374151 !important; }
+    [data-theme="dark"] .text-gray-300 { color: #D1D5DB !important; }
+    [data-theme="dark"] .text-gray-200 { color: #E5E7EB !important; }
     [data-theme="dark"] .text-green-800 { color: #9FE1CB !important; } /* PCIC Logo text */
     [data-theme="dark"] .text-green-700 { color: #5DCAA5 !important; } /* Headline accents */
     
@@ -227,6 +227,16 @@
     /* Dim the graphics */
     [data-theme="dark"] .orb { opacity: 0.15; }
     [data-theme="dark"] .ring-deco { border-color: rgba(29,158,117,0.3); }
+
+    [data-theme="dark"] #themeToggle:hover { background-color: #374151; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
 
   </style>
 </head>
@@ -253,7 +263,7 @@
       </div>
 
       <div class="flex items-center gap-4">
-        <button id="themeToggle" onclick="toggleTheme()" class="text-gray-400 hover:text-green-700 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full p-1.5 transition-colors cursor-pointer" title="Toggle Dark Mode">
+        <button id="themeToggle" onclick="toggleTheme()" class="text-gray-400 hover:text-green-700 hover:bg-gray-100 rounded-full p-2.5 transition-colors cursor-pointer" title="Toggle Dark Mode">
           <i class="ti ti-moon text-lg" aria-hidden="true"></i>
         </button>
 
@@ -290,6 +300,7 @@
           <i class="ti ti-arrow-right text-base" aria-hidden="true"></i>
         </button>
         <button
+          onclick="document.querySelector('#why-online').scrollIntoView({behavior:'smooth'})"
           class="inline-flex items-center gap-2 text-sm text-gray-500 bg-white border border-gray-200 px-6 py-3 rounded-2xl cursor-pointer hover:border-green-300 hover:text-green-700 transition-all">
           <i class="ti ti-info-circle text-sm" aria-hidden="true"></i>
           Learn more
@@ -387,7 +398,7 @@
       </div>
     </div>
 
-    <section class="relative z-10 px-8 py-14 max-w-4xl mx-auto w-full">
+    <section id="why-online" class="relative z-10 px-8 py-14 max-w-4xl mx-auto w-full">
       <h2 class="font-serif font-semibold text-gray-800 text-xl text-center mb-2 opacity-0-init animate-fade-up">Why apply online?</h2>
       <p class="text-sm text-gray-400 text-center mb-10 opacity-0-init animate-fade-up-d1">Fast, paperless, and accessible from anywhere.</p>
 
@@ -463,21 +474,18 @@
     function toggleTheme() {
       const htmlEl = document.documentElement;
       const themeIcon = document.querySelector('#themeToggle i');
-      
-      if (htmlEl.getAttribute('data-theme') === 'dark') {
-        htmlEl.removeAttribute('data-theme');
-        localStorage.setItem('theme', 'light');
-        themeIcon.className = 'ti ti-moon text-lg';
-      } else {
-        htmlEl.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-        themeIcon.className = 'ti ti-sun text-lg';
-      }
+      const isDark = htmlEl.getAttribute('data-theme') === 'dark';
+      if (isDark) htmlEl.removeAttribute('data-theme');
+      else htmlEl.setAttribute('data-theme', 'dark');
+      if (themeIcon) themeIcon.className = isDark ? 'ti ti-moon text-lg' : 'ti ti-sun text-lg';
+      try { localStorage.setItem('theme', isDark ? 'light' : 'dark'); } catch (_) {}
     }
 
     // Check saved theme on page load
     window.addEventListener('DOMContentLoaded', () => {
-      if (localStorage.getItem('theme') === 'dark') {
+      let saved;
+      try { saved = localStorage.getItem('theme'); } catch (_) {}
+      if (saved === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
         const themeIcon = document.querySelector('#themeToggle i');
         if (themeIcon) themeIcon.className = 'ti ti-sun text-lg';
