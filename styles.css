@@ -1,7 +1,19 @@
 /* ── Base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-body { font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  background-color: #F9FAFB;
+  background-image: radial-gradient(ellipse 80% 60% at 10% -10%, rgba(29,158,117,.10) 0%, transparent 55%),
+                    radial-gradient(ellipse 60% 50% at 95% 110%, rgba(15,110,86,.08) 0%, transparent 55%);
+}
+[data-theme="dark"] body {
+  background-color: #111827;
+  background-image: radial-gradient(ellipse 80% 60% at 10% -10%, rgba(29,158,117,.06) 0%, transparent 55%),
+                    radial-gradient(ellipse 60% 50% at 95% 110%, rgba(15,110,86,.05) 0%, transparent 55%);
+}
 
 /* ── Step page visibility ── */
 .step-page { display: none; }
@@ -39,6 +51,7 @@ body { font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; }
 }
 .field-input:hover  { border-color: #9FE1CB; }
 .field-input:focus  { border-color: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,.15); }
+.field-error        { border-color: #EF4444 !important; box-shadow: 0 0 0 3px rgba(239,68,68,.15) !important; }
 
 /* ── Select arrow ── */
 .field-select {
@@ -328,8 +341,10 @@ body { font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; }
 [data-theme="dark"] .checkmark { background-color: #1F2937; border-color: #4B5563; }
 
 /* Toggle Switch */
-[data-theme="dark"] .sw-track { background-color: #4B5563 !important; }
-[data-theme="dark"] .sw-track::before { background-color: #D1D5DB !important; }
+[data-theme="dark"] .sw-track { background: #4B5563; }
+[data-theme="dark"] .sw-track::before { background: #D1D5DB; }
+[data-theme="dark"] .toggle-sw input:checked + .sw-track { background: #1D9E75; }
+[data-theme="dark"] .ip-toggle-row { background: #1F2937; border-color: #374151; }
 
 /* Fix Calendar Icon visibility on dark inputs */
 [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
@@ -339,4 +354,48 @@ body { font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; }
 /* Fix Select Dropdown Arrow visibility */
 [data-theme="dark"] .field-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+/* ── Respect reduced motion preference ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Sticky form footer on mobile ── */
+@media (max-width: 768px) {
+  #formFooter {
+    position: sticky;
+    bottom: 0;
+    background: #F9FAFB;
+    padding-bottom: 12px;
+    z-index: 10;
+  }
+  [data-theme="dark"] #formFooter { background: #111827; }
+}
+
+/* ── CPI table — responsive card stack on mobile ── */
+@media (max-width: 640px) {
+  .cpi-tbl, .cpi-tbl thead, .cpi-tbl tbody, .cpi-tbl tr, .cpi-tbl td {
+    display: block;
+  }
+  .cpi-tbl thead { display: none; }
+  .cpi-tbl tr {
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+  .cpi-tbl td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    color: #6B7280;
+    margin-bottom: 2px;
+  }
+  [data-theme="dark"] .cpi-tbl tr { border-color: #374151; }
+  [data-theme="dark"] .cpi-tbl td::before { color: #9CA3AF; }
 }
