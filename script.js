@@ -1,6 +1,9 @@
-/* ── State ── */
+'use strict';
+
+/* ── State ────────────────────────────────────────────────────── */
 let cur = 0;
 const TOTAL = 6;
+
 const LABELS = [
   'Personal Information',
   'Insurance Coverage',
@@ -10,38 +13,179 @@ const LABELS = [
   'Validation & Signatures',
 ];
 
-/* ── Navigation ── */
+/* ── Required fields per step ────────────────────────────────── */
+const REQUIRED = {
+  0: ['proposerName', 'address', 'birthday', 'civilStatus', 'sex', 'beneficiary'],
+  1: ['crops', 'plantationSize', 'coverageStart', 'coverageEnd', 'desiredCover'],
+  2: ['plantationName', 'farmAddress', 'farmArea', 'soilType', 'soilPH', 'topography'],
+  3: [
+    'variety', 'areaPlanted', 'datePlanting', 'estHarvest',
+    'hillsNum', 'irrigationType', 'treesNum', 'avgYield',
+  ],
+  4: [], // CPI has its own check below
+  5: ['supervisingPT', 'ptDate', 'proposeDate'],
+};
+
+/* ── Field constraints (maxlength / max / min) ───────────────── */
+// Applied on DOMContentLoaded so DB limits are enforced in-browser
+const FIELD_CONSTRAINTS = [
+  { id: 'soilType',       maxlength: 10  },
+  { id: 'topography',     maxlength: 10  },
+  { id: 'variety',        maxlength: 20  },
+  { id: 'irrigationType', maxlength: 15  },
+  { id: 'supervisingPT',  maxlength: 30  },
+  { id: 'desiredCover',   max: 99999     },
+  { id: 'soilPH',         min: 0.1, max: 14.9 },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   VALIDATION
+══════════════════════════════════════════════════════════════ */
+
+/**
+ * Validates all required fields for a given step index.
+ * Adds .field-error to empty inputs, shows a toast, returns bool.
+ */
+function validateStep(step) {
+  // Clear previous error highlights
+  document.querySelectorAll('.field-error').forEach(el => {
+    el.classList.remove('field-error');
+  });
+
+  let valid = true;
+  const requiredIds = REQUIRED[step] ?? [];
+
+  requiredIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isEmpty = el.value.trim() === '';
+    if (isEmpty) {
+      el.classList.add('field-error');
+      valid = false;
+    }
+  });
+
+  // Step 1 — at least one peril must be checked
+  if (step === 1) {
+    const perilChecked = ['perilDrought', 'perilTyphoon', 'perilPest']
+      .some(id => document.getElementById(id)?.checked);
+    if (!perilChecked) {
+      // Highlight the perils container
+      const perilSection = document.querySelector('#page-1 .custom-checkbox-label');
+      perilSection?.closest('div')?.classList.add('field-error');
+      valid = false;
+    }
+  }
+
+  // Step 4 — at least one CPI block must have a DAP value filled
+  if (step === 4) {
+    const dapInputs = [...document.querySelectorAll('.dap-input')];
+    const anyFilled = dapInputs.some(i => i.value.trim() !== '');
+    if (!anyFilled) {
+      dapInputs.forEach(i => i.classList.add('field-error'));
+      valid = false;
+    }
+  }
+
+  // Step 0 — contact numbers: at least one tag must be added
+  if (step === 0) {
+    const tags = document.querySelectorAll('#contactWrap .tag');
+    if (tags.length === 0) {
+      document.getElementById('contactWrap')?.classList.add('field-error');
+      valid = false;
+    }
+  }
+
+  if (!valid) {
+    showToast('Please fill in all required fields before continuing.');
+  }
+
+  return valid;
+}
+
+/* ── Clear error highlight when user starts typing / selecting ── */
+function clearErrorOnInput(el) {
+  el.addEventListener('input',  () => el.classList.remove('field-error'));
+  el.addEventListener('change', () => el.classList.remove('field-error'));
+}
+
+/* ── Toast ────────────────────────────────────────────────────── */
+function showToast(msg, type = 'error') {
+  document.getElementById('pcic-toast')?.remove();
+
+  const colors = {
+    error:   { bg: '#1f2937', icon: '⚠️' },
+    success: { bg: '#0F6E56', icon: '✓'  },
+  };
+  const { bg, icon } = colors[type] ?? colors.error;
+
+  const toast = document.createElement('div');
+  toast.id = 'pcic-toast';
+  toast.setAttribute('role', 'alert');
+  toast.setAttribute('aria-live', 'assertive');
+  toast.style.cssText = `
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(0);
+    background: ${bg}; color: #fff;
+    font-size: 0.8125rem; font-family: 'DM Sans', sans-serif;
+    padding: 10px 22px; border-radius: 999px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+    z-index: 9999; white-space: nowrap;
+    animation: pcicFadeUp 0.22s ease forwards;
+  `;
+  toast.textContent = `${icon}  ${msg}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast?.remove(), 3200);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════════════════════ */
+
 function goTo(n) {
-  if (n > cur) return;
-  document.getElementById('page-' + cur).classList.remove('active');
+  if (n === cur) return;
+
+  // Prevent jumping to a future step — validate each skipped step
+  if (n > cur) {
+    showToast('Complete the current step first.');
+    return;
+  }
+
+  document.getElementById(`page-${cur}`).classList.remove('active');
   cur = n;
-  document.getElementById('page-' + cur).classList.add('active');
+  document.getElementById(`page-${cur}`).classList.add('active');
   syncNav();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function nextStep() {
+  if (!validateStep(cur)) return;   // ← blocked until valid
+
   if (cur === TOTAL - 1) {
-    document.getElementById('page-' + cur).classList.remove('active');
+    // Final submit
+    document.getElementById(`page-${cur}`).classList.remove('active');
     document.getElementById('page-success').classList.add('active');
     document.getElementById('formFooter').style.display = 'none';
     updatePills(TOTAL);
-    document.getElementById('stepLabel').textContent = 'Application Submitted';
+    document.getElementById('stepLabel').textContent  = 'Application Submitted';
     document.getElementById('stepCounter').textContent = 'Complete';
     document.getElementById('progressFill').style.width = '100%';
+    showToast('Application submitted successfully!', 'success');
     return;
   }
-  document.getElementById('page-' + cur).classList.remove('active');
+
+  document.getElementById(`page-${cur}`).classList.remove('active');
   cur++;
-  document.getElementById('page-' + cur).classList.add('active');
+  document.getElementById(`page-${cur}`).classList.add('active');
   syncNav();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function prevStep() {
   if (cur === 0) return;
-  document.getElementById('page-' + cur).classList.remove('active');
+  document.getElementById(`page-${cur}`).classList.remove('active');
   cur--;
-  document.getElementById('page-' + cur).classList.add('active');
+  document.getElementById(`page-${cur}`).classList.add('active');
   syncNav();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -54,23 +198,26 @@ function syncNav() {
 
   if (cur === TOTAL - 1) {
     btnNext.innerHTML = '<i class="ti ti-send text-sm" aria-hidden="true"></i> Submit application';
-    btnNext.style.background = '#BA7517';
-    btnNext.style.boxShadow = '0 2px 8px rgba(186,117,23,0.3)';
+    btnNext.style.background  = '#BA7517';
+    btnNext.style.boxShadow   = '0 2px 8px rgba(186,117,23,0.3)';
   } else {
     btnNext.innerHTML = 'Next <i class="ti ti-arrow-right text-sm" aria-hidden="true"></i>';
-    btnNext.style.background = '#0F6E56';
-    btnNext.style.boxShadow = '0 2px 8px rgba(15,110,86,0.3)';
+    btnNext.style.background  = '#0F6E56';
+    btnNext.style.boxShadow   = '0 2px 8px rgba(15,110,86,0.3)';
   }
 
-  document.getElementById('stepLabel').textContent = LABELS[cur];
-  document.getElementById('stepCounter').textContent = 'Step ' + (cur + 1) + ' of ' + TOTAL;
-  document.getElementById('progressFill').style.width = ((cur + 1) / TOTAL * 100).toFixed(2) + '%';
+  document.getElementById('stepLabel').textContent   = LABELS[cur];
+  document.getElementById('stepCounter').textContent = `Step ${cur + 1} of ${TOTAL}`;
+  document.getElementById('progressFill').style.width =
+    `${((cur + 1) / TOTAL * 100).toFixed(2)}%`;
+
   updatePills(cur);
 }
 
 function updatePills(active) {
-  document.querySelectorAll('.step-pill').forEach(function (p, i) {
+  document.querySelectorAll('.step-pill').forEach((p, i) => {
     p.classList.remove('active', 'done');
+    p.setAttribute('aria-current', i === active ? 'step' : 'false');
     if (i === active) p.classList.add('active');
     else if (i < active) p.classList.add('done');
   });
@@ -80,132 +227,159 @@ function resetForm() {
   location.reload();
 }
 
-/* ── Tag input (multi-valued fields) ── */
+/* ══════════════════════════════════════════════════════════════
+   TAG INPUT (multi-valued contact numbers)
+══════════════════════════════════════════════════════════════ */
+
 function addTag(e, wrapId) {
   if (e.key !== 'Enter') return;
   e.preventDefault();
-  var wrap  = document.getElementById(wrapId);
-  var input = wrap.querySelector('.tag-input');
-  var val   = input.value.trim();
+
+  const wrap  = document.getElementById(wrapId);
+  const input = wrap.querySelector('.tag-input');
+  const val   = input.value.trim();
   if (!val) return;
 
-  var tag = document.createElement('span');
+  const tag = document.createElement('span');
   tag.className = 'tag';
-  tag.innerHTML = val + ' <button onclick="removeTag(this)" aria-label="Remove">×</button>';
+  tag.innerHTML = `${val} <button onclick="removeTag(this)" aria-label="Remove ${val}">×</button>`;
   wrap.insertBefore(tag, input);
   input.value = '';
+
+  // Remove error highlight once a tag is added
+  wrap.classList.remove('field-error');
 }
 
 function removeTag(btn) {
   btn.parentElement.remove();
 }
 
-/* ── IP / Tribe toggle ── */
+/* ══════════════════════════════════════════════════════════════
+   IP / TRIBE TOGGLE
+══════════════════════════════════════════════════════════════ */
+
 function toggleTribe() {
-  var on    = document.getElementById('ipToggle').checked;
-  var field = document.getElementById('tribeField');
-  field.classList.toggle('hidden', !on);
+  const isOn   = document.getElementById('ipToggle').checked;
+  const field  = document.getElementById('tribeField');
+  field.classList.toggle('hidden', !isOn);
 }
 
-/* ── Age group (derived) ── */
-function calcAge() {
-  var dp = document.getElementById('datePlanting').value;
-  if (!dp) return;
+/* ══════════════════════════════════════════════════════════════
+   AGE GROUP (derived from date of planting)
+══════════════════════════════════════════════════════════════ */
 
-  var planted = new Date(dp);
-  var now     = new Date();
-  var yrs     = now.getFullYear() - planted.getFullYear();
-  var mos     = now.getMonth()    - planted.getMonth();
+function calcAge() {
+  const dp = document.getElementById('datePlanting')?.value;
+  const el = document.getElementById('ageGroup');
+  if (!el) return;
+
+  if (!dp) {
+    el.textContent = 'Calculating from date of planting…';
+    return;
+  }
+
+  const planted = new Date(dp);
+  const now     = new Date();
+  let yrs = now.getFullYear() - planted.getFullYear();
+  let mos = now.getMonth()    - planted.getMonth();
 
   if (mos < 0) { yrs--; mos += 12; }
 
-  var label = yrs + ' year' + (yrs !== 1 ? 's' : '');
-  if (mos) label += ', ' + mos + ' month' + (mos !== 1 ? 's' : '');
-  label += ' — Age group: ' + yrs;
+  let label = `${yrs} year${yrs !== 1 ? 's' : ''}`;
+  if (mos) label += `, ${mos} month${mos !== 1 ? 's' : ''}`;
+  label += ` — Age group: ${yrs}`;
 
-  document.getElementById('ageGroup').textContent = label;
+  el.textContent = label;
 }
 
-/* ═══════════════════════════════════════════════
-   CPI — Dynamic blocks (one per DAP schedule)
-═══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   CPI — Dynamic blocks
+══════════════════════════════════════════════════════════════ */
 
+/**
+ * Builds a full CPI schedule block using a template literal.
+ * Much safer and more readable than string concatenation.
+ */
 function buildCPIBlock(isFirst) {
-  var block = document.createElement('div');
+  const removeBtn = isFirst ? '' : `
+    <button class="del-block-btn" onclick="removeCPIBlock(this)">
+      <i class="ti ti-trash text-sm" aria-hidden="true"></i> Remove schedule
+    </button>`;
+
+  const matRow = () => `
+    <tr class="border-b border-gray-100">
+      <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Item name" aria-label="Item name" /></td>
+      <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" aria-label="Quantity" /></td>
+      <td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" aria-label="Cost" oninput="recalcTotal()" /></td>
+      <td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete row"><i class="ti ti-trash" aria-hidden="true"></i></button></td>
+    </tr>`;
+
+  const labRow = () => `
+    <tr class="border-b border-gray-100">
+      <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Workforce type" aria-label="Workforce type" /></td>
+      <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" aria-label="Quantity" /></td>
+      <td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" aria-label="Cost" oninput="recalcTotal()" /></td>
+      <td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete row"><i class="ti ti-trash" aria-hidden="true"></i></button></td>
+    </tr>`;
+
+  const tableHead = (col1Label) => `
+    <thead>
+      <tr class="bg-gray-50 border-b border-gray-200">
+        <th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:42%">${col1Label}</th>
+        <th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:26%">Quantity</th>
+        <th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:22%">Cost (₱)</th>
+        <th style="width:10%"></th>
+      </tr>
+    </thead>`;
+
+  const block = document.createElement('div');
   block.className = 'cpi-block';
+  block.innerHTML = `
+    <div class="cpi-block-header">
+      <div class="flex flex-col gap-1" style="max-width:200px; margin-bottom:14px;">
+        <label class="text-xs font-medium text-gray-600">
+          Days after planting <span class="text-red-500">*</span>
+        </label>
+        <input type="number" class="dap-input field-input" placeholder="0" maxlength="5" aria-label="Days after planting" />
+        <p class="text-[11px] text-gray-400">Integer (5 chars)</p>
+      </div>
+      ${removeBtn}
+    </div>
 
-  block.innerHTML =
-    '<div class="cpi-block-header">' +
-      '<div class="flex flex-col gap-1" style="max-width:200px; margin-bottom:14px;">' +
-        '<label class="text-xs font-medium text-gray-600">Days after planting <span class="text-red-500">*</span></label>' +
-        '<input type="number" class="dap-input field-input" placeholder="0" />' +
-        '<p class="text-[11px] text-gray-400">Integer (5 chars)</p>' +
-      '</div>' +
-      (isFirst ? '' :
-        '<button class="del-block-btn" onclick="removeCPIBlock(this)">' +
-          '<i class="ti ti-trash text-sm" aria-hidden="true"></i> Remove schedule' +
-        '</button>'
-      ) +
-    '</div>' +
+    <p class="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-2">
+      <i class="ti ti-package text-green-500 text-sm" aria-hidden="true"></i> Materials
+    </p>
+    <div class="border border-gray-200 rounded-xl overflow-hidden mb-2">
+      <table class="cpi-tbl w-full text-sm">
+        ${tableHead('Item')}
+        <tbody class="mat-body">${matRow()}</tbody>
+      </table>
+    </div>
+    <button class="add-row" onclick="addMatRow(this)">
+      <i class="ti ti-plus" aria-hidden="true"></i> Add material entry
+    </button>
 
-    '<p class="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-2">' +
-      '<i class="ti ti-package text-green-500 text-sm" aria-hidden="true"></i> Materials' +
-    '</p>' +
-    '<div class="border border-gray-200 rounded-xl overflow-hidden mb-2">' +
-      '<table class="cpi-tbl w-full text-sm">' +
-        '<thead><tr class="bg-gray-50 border-b border-gray-200">' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:42%">Item</th>' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:26%">Quantity</th>' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:22%">Cost (₱)</th>' +
-          '<th style="width:10%"></th>' +
-        '</tr></thead>' +
-        '<tbody class="mat-body">' +
-          '<tr class="border-b border-gray-100">' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Item name" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
-            '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>' +
-          '</tr>' +
-        '</tbody>' +
-      '</table>' +
-    '</div>' +
-    '<button class="add-row" onclick="addMatRow(this)">' +
-      '<i class="ti ti-plus" aria-hidden="true"></i> Add material entry' +
-    '</button>' +
+    <p class="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-2 mt-5">
+      <i class="ti ti-users text-green-500 text-sm" aria-hidden="true"></i> Labor
+    </p>
+    <div class="border border-gray-200 rounded-xl overflow-hidden mb-2">
+      <table class="cpi-tbl w-full text-sm">
+        ${tableHead('Workforce')}
+        <tbody class="lab-body">${labRow()}</tbody>
+      </table>
+    </div>
+    <button class="add-row" onclick="addLabRow(this)">
+      <i class="ti ti-plus" aria-hidden="true"></i> Add labor entry
+    </button>
 
-    '<p class="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-2 mt-5">' +
-      '<i class="ti ti-users text-green-500 text-sm" aria-hidden="true"></i> Labor' +
-    '</p>' +
-    '<div class="border border-gray-200 rounded-xl overflow-hidden mb-2">' +
-      '<table class="cpi-tbl w-full text-sm">' +
-        '<thead><tr class="bg-gray-50 border-b border-gray-200">' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:42%">Workforce</th>' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:26%">Quantity</th>' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:22%">Cost (₱)</th>' +
-          '<th style="width:10%"></th>' +
-        '</tr></thead>' +
-        '<tbody class="lab-body">' +
-          '<tr class="border-b border-gray-100">' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Workforce type" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
-            '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>' +
-          '</tr>' +
-        '</tbody>' +
-      '</table>' +
-    '</div>' +
-    '<button class="add-row" onclick="addLabRow(this)">' +
-      '<i class="ti ti-plus" aria-hidden="true"></i> Add labor entry' +
-    '</button>' +
-
-    '<hr class="block-divider" />';
+    <hr class="block-divider" />
+  `;
 
   return block;
 }
 
 function addCPIBlock() {
-  var container = document.getElementById('cpiBlocksContainer');
-  container.appendChild(buildCPIBlock(false));
+  document.getElementById('cpiBlocksContainer').appendChild(buildCPIBlock(false));
 }
 
 function removeCPIBlock(btn) {
@@ -220,78 +394,140 @@ function removeRow(btn) {
 }
 
 function addMatRow(btn) {
-  var tbody = btn.previousElementSibling.querySelector('.mat-body') ||
-              btn.closest('.cpi-block').querySelector('.mat-body');
-  var tr = document.createElement('tr');
+  const tbody = btn.closest('.cpi-block').querySelector('.mat-body');
+  const tr = document.createElement('tr');
   tr.className = 'border-b border-gray-100';
-  tr.innerHTML =
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Item name" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
-    '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>';
+  tr.innerHTML = `
+    <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Item name" aria-label="Item name" /></td>
+    <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" aria-label="Quantity" /></td>
+    <td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" aria-label="Cost" oninput="recalcTotal()" /></td>
+    <td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete row"><i class="ti ti-trash" aria-hidden="true"></i></button></td>
+  `;
   tbody.appendChild(tr);
 }
 
 function addLabRow(btn) {
-  var tbody = btn.closest('.cpi-block').querySelector('.lab-body');
-  var tr = document.createElement('tr');
+  const tbody = btn.closest('.cpi-block').querySelector('.lab-body');
+  const tr = document.createElement('tr');
   tr.className = 'border-b border-gray-100';
-  tr.innerHTML =
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Workforce type" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
-    '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>';
+  tr.innerHTML = `
+    <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Workforce type" aria-label="Workforce type" /></td>
+    <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" aria-label="Quantity" /></td>
+    <td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" aria-label="Cost" oninput="recalcTotal()" /></td>
+    <td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete row"><i class="ti ti-trash" aria-hidden="true"></i></button></td>
+  `;
   tbody.appendChild(tr);
 }
 
 /* ── Grand total (derived) ── */
 function recalcTotal() {
-  var total = 0;
-  document.querySelectorAll('.cost-input').forEach(function (inp) {
+  let total = 0;
+  document.querySelectorAll('.cost-input').forEach(inp => {
     total += parseFloat(inp.value) || 0;
   });
   document.getElementById('totalCost').textContent =
-    '₱' + total.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    '₱' + total.toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 }
 
-/* ── CPI inline input style ── */
-var cpiStyle = document.createElement('style');
-cpiStyle.textContent =
-  '.cpi-input { background: transparent; border: none; outline: none; width: 100%;' +
-  'font-family: "DM Sans", sans-serif; font-size: 0.8125rem; color: #111827;' +
-  'padding: 3px 4px; border-radius: 4px; transition: background 0.15s; }' +
-  '.cpi-input:focus { background: #E1F5EE; }';
-document.head.appendChild(cpiStyle);
+/* ══════════════════════════════════════════════════════════════
+   DARK MODE
+══════════════════════════════════════════════════════════════ */
 
-/* ── Init ── */
-document.addEventListener('DOMContentLoaded', function () {
-  document.getElementById('cpiBlocksContainer').appendChild(buildCPIBlock(true));
-  calcAge();
-});
-
-// --- Dark Mode Logic ---
 function toggleTheme() {
-  const htmlEl = document.documentElement;
-  const themeIcon = document.querySelector('#themeToggle i');
-  
-  if (htmlEl.getAttribute('data-theme') === 'dark') {
-    // Switch to Light Mode
-    htmlEl.removeAttribute('data-theme');
+  const html      = document.documentElement;
+  const icon      = document.querySelector('#themeToggle i');
+  const isDark    = html.getAttribute('data-theme') === 'dark';
+
+  if (isDark) {
+    html.removeAttribute('data-theme');
     localStorage.setItem('theme', 'light');
-    themeIcon.className = 'ti ti-moon';
+    if (icon) icon.className = 'ti ti-moon';
   } else {
-    // Switch to Dark Mode
-    htmlEl.setAttribute('data-theme', 'dark');
+    html.setAttribute('data-theme', 'dark');
     localStorage.setItem('theme', 'dark');
-    themeIcon.className = 'ti ti-sun';
+    if (icon) icon.className = 'ti ti-sun';
   }
 }
 
-// Check saved theme on page load
-window.addEventListener('DOMContentLoaded', () => {
+/* ══════════════════════════════════════════════════════════════
+   INJECT ANIMATION + CPI INPUT STYLES
+   (Keep here — no build step available; scoped & minimal)
+══════════════════════════════════════════════════════════════ */
+
+const _styles = document.createElement('style');
+_styles.textContent = `
+  /* CPI table inputs */
+  .cpi-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8125rem;
+    color: #111827;
+    padding: 3px 4px;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+  .cpi-input:focus { background: #E1F5EE; }
+
+  /* Validation error state */
+  .field-error {
+    border-color: #EF4444 !important;
+    background-color: #FEF2F2 !important;
+    outline: none;
+  }
+
+  /* Toast animation */
+  @keyframes pcicFadeUp {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0);    }
+  }
+`;
+document.head.appendChild(_styles);
+
+/* ══════════════════════════════════════════════════════════════
+   INIT — single DOMContentLoaded
+══════════════════════════════════════════════════════════════ */
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  /* 1. Boot CPI block */
+  document.getElementById('cpiBlocksContainer')
+    .appendChild(buildCPIBlock(true));
+
+  /* 2. Seed age group label */
+  calcAge();
+
+  /* 3. Restore saved theme */
   if (localStorage.getItem('theme') === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
-    const themeIcon = document.querySelector('#themeToggle i');
-    if (themeIcon) themeIcon.className = 'ti ti-sun';
+    const icon = document.querySelector('#themeToggle i');
+    if (icon) icon.className = 'ti ti-sun';
   }
+
+  /* 4. Apply DB-level field constraints (maxlength / min / max) */
+  FIELD_CONSTRAINTS.forEach(({ id, maxlength, min, max }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (maxlength !== undefined) el.setAttribute('maxlength', maxlength);
+    if (min       !== undefined) el.setAttribute('min', min);
+    if (max       !== undefined) el.setAttribute('max', max);
+  });
+
+  /* 5. Attach live error-clearing to all required fields */
+  Object.values(REQUIRED).flat().forEach(id => {
+    const el = document.getElementById(id);
+    if (el) clearErrorOnInput(el);
+  });
+
+  /* 6. Set default date for proposer date (today) */
+  const proposeDate = document.getElementById('proposeDate');
+  if (proposeDate && !proposeDate.value) {
+    proposeDate.value = new Date().toISOString().split('T')[0];
+  }
+
 });
