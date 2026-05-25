@@ -1,6 +1,7 @@
-/* ── State ── */
+'use strict';
+
+/* ── State ────────────────────────────────────────────────────── */
 let cur = 0;
-let maxVisited = 0;
 const TOTAL = 6;
 
 const LABELS = [
@@ -142,29 +143,24 @@ function showToast(msg, type = 'error') {
 ══════════════════════════════════════════════════════════════ */
 
 function goTo(n) {
-  if (n > cur) return;
-  document.getElementById('page-' + cur).classList.remove('active');
+  if (n === cur) return;
+
+  // Prevent jumping to a future step — validate each skipped step
+  if (n > cur) {
+    showToast('Complete the current step first.');
+    return;
+  }
+
+  document.getElementById(`page-${cur}`).classList.remove('active');
   cur = n;
   document.getElementById(`page-${cur}`).classList.add('active');
   syncNav();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function validateStep(stepEl) {
-  const required = stepEl.querySelectorAll('.field-input[required]');
-  let valid = true;
-  required.forEach(el => {
-    if (!el.value.trim()) {
-      el.classList.add('field-error');
-      valid = false;
-    } else {
-      el.classList.remove('field-error');
-    }
-  });
-  return valid;
-}
-
 function nextStep() {
+  if (!validateStep(cur)) return;   // ← blocked until valid
+
   if (cur === TOTAL - 1) {
     // Final submit
     document.getElementById(`page-${cur}`).classList.remove('active');
@@ -174,15 +170,15 @@ function nextStep() {
     document.getElementById('stepLabel').textContent  = 'Application Submitted';
     document.getElementById('stepCounter').textContent = 'Complete';
     document.getElementById('progressFill').style.width = '100%';
+    showToast('Application submitted successfully!', 'success');
     return;
   }
 
   document.getElementById(`page-${cur}`).classList.remove('active');
   cur++;
-  document.getElementById('page-' + cur).classList.add('active');
+  document.getElementById(`page-${cur}`).classList.add('active');
   syncNav();
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  focusStepHeading(cur);
 }
 
 function prevStep() {
@@ -192,14 +188,6 @@ function prevStep() {
   document.getElementById(`page-${cur}`).classList.add('active');
   syncNav();
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  focusStepHeading(cur);
-}
-
-function focusStepHeading(n) {
-  var heading = document.querySelector('#page-' + n + ' h3, #page-' + n + ' h2');
-  if (!heading) return;
-  heading.setAttribute('tabindex', '-1');
-  heading.focus();
 }
 
 function syncNav() {
@@ -239,20 +227,27 @@ function resetForm() {
   location.reload();
 }
 
-/* ── Tag input (multi-valued fields) ── */
+/* ══════════════════════════════════════════════════════════════
+   TAG INPUT (multi-valued contact numbers)
+══════════════════════════════════════════════════════════════ */
+
 function addTag(e, wrapId) {
   if (e.key !== 'Enter') return;
   e.preventDefault();
-  var wrap  = document.getElementById(wrapId);
-  var input = wrap.querySelector('.tag-input');
-  var val   = input.value.trim();
+
+  const wrap  = document.getElementById(wrapId);
+  const input = wrap.querySelector('.tag-input');
+  const val   = input.value.trim();
   if (!val) return;
 
   const tag = document.createElement('span');
   tag.className = 'tag';
-  tag.innerHTML = val + ' <button onclick="removeTag(this)" aria-label="Remove">×</button>';
+  tag.innerHTML = `${val} <button onclick="removeTag(this)" aria-label="Remove ${val}">×</button>`;
   wrap.insertBefore(tag, input);
   input.value = '';
+
+  // Remove error highlight once a tag is added
+  wrap.classList.remove('field-error');
 }
 
 function removeTag(btn) {
@@ -339,70 +334,43 @@ function buildCPIBlock(isFirst) {
 
   const block = document.createElement('div');
   block.className = 'cpi-block';
+  block.innerHTML = `
+    <div class="cpi-block-header">
+      <div class="flex flex-col gap-1" style="max-width:200px; margin-bottom:14px;">
+        <label class="text-xs font-medium text-gray-600">
+          Days after planting <span class="text-red-500">*</span>
+        </label>
+        <input type="number" class="dap-input field-input" placeholder="0" maxlength="5" aria-label="Days after planting" />
+        <p class="text-[11px] text-gray-400">Integer (5 chars)</p>
+      </div>
+      ${removeBtn}
+    </div>
 
-  block.innerHTML =
-    '<div class="cpi-block-header">' +
-      '<div class="flex flex-col gap-1" style="max-width:200px; margin-bottom:14px;">' +
-        '<label class="text-xs font-medium text-gray-600">Days after planting <span class="text-red-500">*</span></label>' +
-        '<input type="number" class="dap-input field-input" placeholder="0" />' +
-        '<p class="text-[11px] text-gray-400">Integer (5 chars)</p>' +
-      '</div>' +
-      (isFirst ? '' :
-        '<button class="del-block-btn" onclick="removeCPIBlock(this)">' +
-          '<i class="ti ti-trash text-sm" aria-hidden="true"></i> Remove schedule' +
-        '</button>'
-      ) +
-    '</div>' +
+    <p class="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-2">
+      <i class="ti ti-package text-green-500 text-sm" aria-hidden="true"></i> Materials
+    </p>
+    <div class="border border-gray-200 rounded-xl overflow-hidden mb-2">
+      <table class="cpi-tbl w-full text-sm">
+        ${tableHead('Item')}
+        <tbody class="mat-body">${matRow()}</tbody>
+      </table>
+    </div>
+    <button class="add-row" onclick="addMatRow(this)">
+      <i class="ti ti-plus" aria-hidden="true"></i> Add material entry
+    </button>
 
-    '<p class="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-2">' +
-      '<i class="ti ti-package text-green-500 text-sm" aria-hidden="true"></i> Materials' +
-    '</p>' +
-    '<div class="border border-gray-200 rounded-xl overflow-hidden mb-2">' +
-      '<table class="cpi-tbl w-full text-sm">' +
-        '<thead><tr class="bg-gray-50 border-b border-gray-200">' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:42%">Item</th>' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:26%">Quantity</th>' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:22%">Cost (₱)</th>' +
-          '<th style="width:10%"></th>' +
-        '</tr></thead>' +
-        '<tbody class="mat-body">' +
-          '<tr class="border-b border-gray-100">' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Item name" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
-            '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>' +
-          '</tr>' +
-        '</tbody>' +
-      '</table>' +
-    '</div>' +
-    '<button class="add-row" onclick="addMatRow(this)">' +
-      '<i class="ti ti-plus" aria-hidden="true"></i> Add material entry' +
-    '</button>' +
-
-    '<p class="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-2 mt-5">' +
-      '<i class="ti ti-users text-green-500 text-sm" aria-hidden="true"></i> Labor' +
-    '</p>' +
-    '<div class="border border-gray-200 rounded-xl overflow-hidden mb-2">' +
-      '<table class="cpi-tbl w-full text-sm">' +
-        '<thead><tr class="bg-gray-50 border-b border-gray-200">' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:42%">Workforce</th>' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:26%">Quantity</th>' +
-          '<th class="text-left px-3 py-2 text-[11px] font-medium text-gray-400" style="width:22%">Cost (₱)</th>' +
-          '<th style="width:10%"></th>' +
-        '</tr></thead>' +
-        '<tbody class="lab-body">' +
-          '<tr class="border-b border-gray-100">' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Workforce type" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-            '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
-            '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>' +
-          '</tr>' +
-        '</tbody>' +
-      '</table>' +
-    '</div>' +
-    '<button class="add-row" onclick="addLabRow(this)">' +
-      '<i class="ti ti-plus" aria-hidden="true"></i> Add labor entry' +
-    '</button>' +
+    <p class="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-2 mt-5">
+      <i class="ti ti-users text-green-500 text-sm" aria-hidden="true"></i> Labor
+    </p>
+    <div class="border border-gray-200 rounded-xl overflow-hidden mb-2">
+      <table class="cpi-tbl w-full text-sm">
+        ${tableHead('Workforce')}
+        <tbody class="lab-body">${labRow()}</tbody>
+      </table>
+    </div>
+    <button class="add-row" onclick="addLabRow(this)">
+      <i class="ti ti-plus" aria-hidden="true"></i> Add labor entry
+    </button>
 
     <hr class="block-divider" />
   `;
@@ -429,11 +397,12 @@ function addMatRow(btn) {
   const tbody = btn.closest('.cpi-block').querySelector('.mat-body');
   const tr = document.createElement('tr');
   tr.className = 'border-b border-gray-100';
-  tr.innerHTML =
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Item name" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
-    '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>';
+  tr.innerHTML = `
+    <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Item name" aria-label="Item name" /></td>
+    <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" aria-label="Quantity" /></td>
+    <td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" aria-label="Cost" oninput="recalcTotal()" /></td>
+    <td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete row"><i class="ti ti-trash" aria-hidden="true"></i></button></td>
+  `;
   tbody.appendChild(tr);
 }
 
@@ -441,11 +410,12 @@ function addLabRow(btn) {
   const tbody = btn.closest('.cpi-block').querySelector('.lab-body');
   const tr = document.createElement('tr');
   tr.className = 'border-b border-gray-100';
-  tr.innerHTML =
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Workforce type" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" /></td>' +
-    '<td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" oninput="recalcTotal()" /></td>' +
-    '<td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button></td>';
+  tr.innerHTML = `
+    <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Workforce type" aria-label="Workforce type" /></td>
+    <td class="px-3 py-2"><input class="cpi-input" type="text" placeholder="Qty + unit" aria-label="Quantity" /></td>
+    <td class="px-3 py-2"><input class="cpi-input cost-input" type="number" placeholder="0.00" aria-label="Cost" oninput="recalcTotal()" /></td>
+    <td class="px-3 py-2"><button class="del-btn" onclick="removeRow(this)" aria-label="Delete row"><i class="ti ti-trash" aria-hidden="true"></i></button></td>
+  `;
   tbody.appendChild(tr);
 }
 
@@ -467,28 +437,97 @@ function recalcTotal() {
 ══════════════════════════════════════════════════════════════ */
 
 function toggleTheme() {
-  const htmlEl = document.documentElement;
-  const themeIcon = document.querySelector('#themeToggle i');
-  
-  if (htmlEl.getAttribute('data-theme') === 'dark') {
-    // Switch to Light Mode
-    htmlEl.removeAttribute('data-theme');
+  const html      = document.documentElement;
+  const icon      = document.querySelector('#themeToggle i');
+  const isDark    = html.getAttribute('data-theme') === 'dark';
+
+  if (isDark) {
+    html.removeAttribute('data-theme');
     localStorage.setItem('theme', 'light');
-    themeIcon.className = 'ti ti-moon';
+    if (icon) icon.className = 'ti ti-moon';
   } else {
-    // Switch to Dark Mode
-    htmlEl.setAttribute('data-theme', 'dark');
+    html.setAttribute('data-theme', 'dark');
     localStorage.setItem('theme', 'dark');
-    themeIcon.className = 'ti ti-sun';
+    if (icon) icon.className = 'ti ti-sun';
   }
 }
 
-// Check saved theme on page load
-window.addEventListener('DOMContentLoaded', () => {
+/* ══════════════════════════════════════════════════════════════
+   INJECT ANIMATION + CPI INPUT STYLES
+   (Keep here — no build step available; scoped & minimal)
+══════════════════════════════════════════════════════════════ */
+
+const _styles = document.createElement('style');
+_styles.textContent = `
+  /* CPI table inputs */
+  .cpi-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8125rem;
+    color: #111827;
+    padding: 3px 4px;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+  .cpi-input:focus { background: #E1F5EE; }
+
+  /* Validation error state */
+  .field-error {
+    border-color: #EF4444 !important;
+    background-color: #FEF2F2 !important;
+    outline: none;
+  }
+
+  /* Toast animation */
+  @keyframes pcicFadeUp {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0);    }
+  }
+`;
+document.head.appendChild(_styles);
+
+/* ══════════════════════════════════════════════════════════════
+   INIT — single DOMContentLoaded
+══════════════════════════════════════════════════════════════ */
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  /* 1. Boot CPI block */
+  document.getElementById('cpiBlocksContainer')
+    .appendChild(buildCPIBlock(true));
+
+  /* 2. Seed age group label */
+  calcAge();
+
+  /* 3. Restore saved theme */
   if (localStorage.getItem('theme') === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
-    const themeIcon = document.querySelector('#themeToggle i');
-    if (themeIcon) themeIcon.className = 'ti ti-sun';
+    const icon = document.querySelector('#themeToggle i');
+    if (icon) icon.className = 'ti ti-sun';
+  }
+
+  /* 4. Apply DB-level field constraints (maxlength / min / max) */
+  FIELD_CONSTRAINTS.forEach(({ id, maxlength, min, max }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (maxlength !== undefined) el.setAttribute('maxlength', maxlength);
+    if (min       !== undefined) el.setAttribute('min', min);
+    if (max       !== undefined) el.setAttribute('max', max);
+  });
+
+  /* 5. Attach live error-clearing to all required fields */
+  Object.values(REQUIRED).flat().forEach(id => {
+    const el = document.getElementById(id);
+    if (el) clearErrorOnInput(el);
+  });
+
+  /* 6. Set default date for proposer date (today) */
+  const proposeDate = document.getElementById('proposeDate');
+  if (proposeDate && !proposeDate.value) {
+    proposeDate.value = new Date().toISOString().split('T')[0];
   }
 
 });
