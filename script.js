@@ -162,16 +162,144 @@ function nextStep() {
   if (!validateStep(cur)) return;   // ← blocked until valid
 
   if (cur === TOTAL - 1) {
-    // Final submit
-    document.getElementById(`page-${cur}`).classList.remove('active');
-    document.getElementById('page-success').classList.add('active');
-    document.getElementById('formFooter').style.display = 'none';
-    updatePills(TOTAL);
-    document.getElementById('stepLabel').textContent  = 'Application Submitted';
-    document.getElementById('stepCounter').textContent = 'Complete';
-    document.getElementById('progressFill').style.width = '100%';
-    showToast('Application submitted successfully!', 'success');
-    return;
+    // 1. Change button to show loading state
+    const btnNext = document.getElementById('btnNext');
+    const originalText = btnNext.innerHTML;
+    btnNext.innerHTML = '<i class="ti ti-loader animate-spin text-sm"></i> Submitting...';
+    btnNext.disabled = true;
+
+    // 2. Extract Contact Tags (Grabs the first two)
+    const tagElements = Array.from(document.querySelectorAll('#contactWrap .tag'));
+    const contacts = tagElements.map(t => t.textContent.replace('×', '').trim());
+
+    // 3. Build the CPI Schedule Array dynamically
+    const cpiSchedule = [];
+    document.querySelectorAll('.cpi-block').forEach(block => {
+       const dap = parseInt(block.querySelector('.dap-input').value) || 0;
+       
+       const materials = [];
+       block.querySelectorAll('.mat-body tr').forEach(tr => {
+          const inputs = tr.querySelectorAll('input');
+          if (inputs[0].value) { // If item name exists
+             materials.push({ 
+               item: inputs[0].value, 
+               quantity: parseInt(inputs[1].value) || 0, 
+               cost: parseFloat(inputs[2].value) || 0 
+             });
+          }
+       });
+
+       const labor = [];
+       block.querySelectorAll('.lab-body tr').forEach(tr => {
+          const inputs = tr.querySelectorAll('input');
+          if (inputs[0].value) { // If workforce type exists
+             labor.push({ 
+               workforce: inputs[0].value, 
+               quantity: parseInt(inputs[1].value) || 0, 
+               cost: parseFloat(inputs[2].value) || 0 
+             });
+          }
+       });
+
+       cpiSchedule.push({ daysAfterPlanting: dap, materials, labor });
+    });
+
+    // 4. Construct the exact JSON Payload the backend expects
+    const formData = {
+      // Personal Info
+      proposerName: document.getElementById('proposerName').value,
+      address: document.getElementById('address').value,
+      birthday: document.getElementById('birthday').value,
+      contactNo: contacts[0] || '',
+      secondaryContactNo: contacts[1] || null,
+      civilStatus: document.getElementById('civilStatus').value,
+      sex: document.getElementById('sex').value,
+      beneficiary: document.getElementById('beneficiary').value,
+      spouse: document.getElementById('spouse').value || null,
+      spouseBirthday: document.getElementById('spouseBday').value || null,
+      isIP: document.getElementById('ipToggle').checked,
+      tribe: document.getElementById('tribe').value || null,
+
+      // Farm Info
+      plantationName: document.getElementById('plantationName').value,
+      farmAddress: document.getElementById('farmAddress').value,
+      farmArea: parseFloat(document.getElementById('farmArea').value) || 0,
+      soilType: document.getElementById('soilType').value,
+      soilPH: parseFloat(document.getElementById('soilPH').value) || 0,
+      topography: document.getElementById('topography').value,
+      irrigationType: document.getElementById('irrigationType').value,
+
+      // Insurance Info
+      crops: document.getElementById('crops').value,
+      plantationSize: parseFloat(document.getElementById('plantationSize').value) || 0,
+      coverageStart: document.getElementById('coverageStart').value,
+      coverageEnd: document.getElementById('coverageEnd').value,
+      desiredAmountCover: parseFloat(document.getElementById('desiredCover').value) || 0,
+      supervisingPT: document.getElementById('supervisingPT').value,
+      ptDate: document.getElementById('ptDate').value,
+      proposerDate: document.getElementById('proposeDate').value,
+
+      // Perils
+      perils: {
+        flood: false, // Hidden in UI, defaulted to false
+        typhoon: document.getElementById('perilTyphoon').checked,
+        drought: document.getElementById('perilDrought').checked,
+        pests: document.getElementById('perilPest').checked
+      },
+
+      // Varieties Array
+      varieties: [{
+        varietyName: document.getElementById('variety').value,
+        areaPlanted: parseFloat(document.getElementById('areaPlanted').value) || 0,
+        datePlanting: document.getElementById('datePlanting').value,
+        estHarvestDate: document.getElementById('estHarvest').value,
+        ageGroup: document.getElementById('ageGroup').textContent.split(': ')[1] || null,
+        numTrees: parseInt(document.getElementById('treesNum').value) || 0,
+        avgYield: parseFloat(document.getElementById('avgYield').value) || 0
+      }],
+
+      // CPI Array
+      cpiSchedule: cpiSchedule
+    };
+
+    // 5. Send data to your Node.js Backend!
+    fetch('http://localhost:3000/api/submit-insurance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.generatedInsuranceID) {
+            // SUCCESS UI UPDATE
+            document.getElementById(`page-${cur}`).classList.remove('active');
+            document.getElementById('page-success').classList.add('active');
+            document.getElementById('formFooter').style.display = 'none';
+            updatePills(TOTAL);
+            
+            document.getElementById('stepLabel').textContent = 'Application Submitted';
+            document.getElementById('stepCounter').textContent = 'Complete';
+            document.getElementById('progressFill').style.width = '100%';
+            
+            // Inject the beautiful sequential ID into the UI
+            document.getElementById('refNumber').textContent = data.generatedInsuranceID;
+            showToast('Application submitted successfully!', 'success');
+        } else {
+            // BACKEND REJECTED IT
+            showToast('Error: ' + (data.error || 'Failed to save application.'));
+            btnNext.innerHTML = originalText;
+            btnNext.disabled = false;
+        }
+    })
+    .catch(error => {
+        // SERVER IS OFF OR CRASHED
+        console.error("Fetch error:", error);
+        showToast('Network error: Ensure backend server is running on port 3000.');
+        btnNext.innerHTML = originalText;
+        btnNext.disabled = false;
+    });
+
+    return; // Stop execution here so it waits for the fetch to finish
   }
 
   document.getElementById(`page-${cur}`).classList.remove('active');
