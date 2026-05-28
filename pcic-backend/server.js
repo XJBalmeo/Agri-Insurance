@@ -7,24 +7,48 @@ const app = express();
 app.use(cors());
 app.use(express.json()); 
 
+// ======================================================
+// HELPER FUNCTION: GENERATE SEQUENTIAL IDs
+// ======================================================
+async function generateNextId(connection, tableName, idColumn, prefix, padding) {
+    // 1. Ask MySQL for the highest ID currently in the table
+    const [rows] = await connection.query(`
+        SELECT ${idColumn} FROM ${tableName} 
+        WHERE ${idColumn} LIKE ? 
+        ORDER BY LENGTH(${idColumn}) DESC, ${idColumn} DESC 
+        LIMIT 1
+    `, [`${prefix}%`]);
+
+    // 2. If the table is empty, return the very first ID (e.g., 'P001')
+    if (rows.length === 0) {
+        return prefix + String(1).padStart(padding, '0');
+    }
+
+    // 3. Extract the number, add 1, and format it
+    const currentMaxId = rows[0][idColumn]; // e.g., "P03"
+    const numberPart = parseInt(currentMaxId.replace(prefix, ''), 10); // Turns "03" into 3
+    const nextNumber = numberPart + 1; // 3 + 1 = 4
+
+    return prefix + String(nextNumber).padStart(padding, '0'); // Returns "P004"
+}
+
+
+// ======================================================
 // 🚀 THE MAIN SUBMISSION ROUTE
+// ======================================================
 app.post('/api/submit-insurance', async (req, res) => {
     const connection = await db.getConnection();
     
     try {
-        // Start the "All or Nothing" lock
         await connection.beginTransaction();
-
         const data = req.body; 
 
-        // Generate unique IDs for this specific application
-        const proposerId = 'P' + Date.now().toString().slice(-6); 
-        const plantationId = 'F' + Date.now().toString().slice(-6);
-        const insuranceId = 'INS' + Date.now().toString().slice(-5);
+        // Generate CLEAN, sequential IDs dynamically!
+        const proposerId = await generateNextId(connection, 'ProposerTable', 'ProposerID', 'P', 3);
+        const plantationId = await generateNextId(connection, 'FarmTable', 'PlantationID', 'F', 3);
+        const insuranceId = await generateNextId(connection, 'InsuranceTable', 'InsuranceID', 'INS', 3);
 
-        // ======================================================
         // 1. PROPOSER TABLE
-        // ======================================================
         await connection.execute(`
             INSERT INTO ProposerTable 
             (ProposerID, ProposerName, Address, Birthday, ContactNo, SecondaryContactNo, CivilStatus, Sex, IP, Tribe, Spouse, SpouseBirthday) 
@@ -36,9 +60,7 @@ app.post('/api/submit-insurance', async (req, res) => {
             data.spouse || null, data.spouseBirthday || null
         ]);
 
-        // ======================================================
         // 2. FARM TABLE
-        // ======================================================
         await connection.execute(`
             INSERT INTO FarmTable 
             (PlantationID, PlantationName, FarmAddress, FarmArea, SoilType, SoilPH, Topography, IrrigationType) 
@@ -48,9 +70,7 @@ app.post('/api/submit-insurance', async (req, res) => {
             data.soilType, data.soilPH, data.topography, data.irrigationType
         ]);
 
-        // ======================================================
-        // 3. INSURANCE TABLE (Links to Proposer and Farm)
-        // ======================================================
+        // 3. INSURANCE TABLE
         await connection.execute(`
             INSERT INTO InsuranceTable 
             (InsuranceID, ProposerID, Beneficiary, Crops, PlantationSize, CoverageStart, CoverageEnd, Flood, Typhoon, Drought, Pests, DesiredAmountCover, PlantationID, SupervisingPT, PTDate, ProposerDate) 
@@ -64,9 +84,7 @@ app.post('/api/submit-insurance', async (req, res) => {
             data.supervisingPT, data.ptDate, data.proposerDate || null
         ]);
 
-        // ======================================================
         // 4. VARIETY TABLE
-        // ======================================================
         if (data.varieties && data.varieties.length > 0) {
             for (let v of data.varieties) {
                 await connection.execute(`
@@ -80,19 +98,15 @@ app.post('/api/submit-insurance', async (req, res) => {
             }
         }
 
-        // ======================================================
         // 5, 6, & 7. CPI SCHEDULE, MATERIALS, AND LABOR
-        // ======================================================
         if (data.cpiSchedule && data.cpiSchedule.length > 0) {
             for (let day of data.cpiSchedule) {
                 
-                // A. Insert the Base CPI Day
                 await connection.execute(`
                     INSERT INTO CPITable (InsuranceID, DaysNoAfterPlanting) 
                     VALUES (?, ?)
                 `, [insuranceId, day.daysAfterPlanting]);
 
-                // B. Insert all Materials for this Day
                 if (day.materials && day.materials.length > 0) {
                     for (let mat of day.materials) {
                         await connection.execute(`
@@ -103,7 +117,6 @@ app.post('/api/submit-insurance', async (req, res) => {
                     }
                 }
 
-                // C. Insert all Labor for this Day
                 if (day.labor && day.labor.length > 0) {
                     for (let lab of day.labor) {
                         await connection.execute(`
@@ -116,24 +129,50 @@ app.post('/api/submit-insurance', async (req, res) => {
             }
         }
 
-        // IF NO ERRORS HAPPENED: Commit everything permanently!
         await connection.commit();
         res.status(200).json({ 
             message: 'Insurance application successfully saved!',
-            generatedInsuranceID: insuranceId 
+            generatedInsuranceID: insuranceId,
+            generatedProposerID: proposerId,
+            generatedPlantationID: plantationId
         });
 
     } catch (error) {
-        // IF ANYTHING FAILED: Rollback and delete the incomplete data!
         await connection.rollback();
         console.error("Transaction Failed:", error);
         res.status(500).json({ error: 'Failed to save application.', details: error.message });
     } finally {
-        connection.release(); // Always return the connection to the pool
+        connection.release(); 
     }
 });
 
-// Start the Server
+// ======================================================
+// 🔍 ROUTE: Get the Total Cost of an Insurance Policy
+// ======================================================
+app.get('/api/insurance/:id/cost', async (req, res) => {
+    const insuranceId = req.params.id;
+
+    try {
+        const [materialResult] = await db.query(`SELECT SUM(MaterialCost) AS TotalMaterialCost FROM CPIMaterialTable WHERE InsuranceID = ?`, [insuranceId]);
+        const [laborResult] = await db.query(`SELECT SUM(LaborCost) AS TotalLaborCost FROM CPILaborTable WHERE InsuranceID = ?`, [insuranceId]);
+
+        const matCost = materialResult[0].TotalMaterialCost || 0;
+        const labCost = laborResult[0].TotalLaborCost || 0;
+        const grandTotal = matCost + labCost;
+
+        res.status(200).json({
+            InsuranceID: insuranceId,
+            TotalMaterialCost: matCost,
+            TotalLaborCost: labCost,
+            GrandTotal: grandTotal
+        });
+
+    } catch (error) {
+        console.error("Failed to calculate cost:", error);
+        res.status(500).json({ error: 'Failed to calculate total cost.' });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
