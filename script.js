@@ -55,6 +55,7 @@ function validateStep(step) {
   let valid = true;
   const requiredIds = REQUIRED[step] ?? [];
 
+  // Check all basic required fields
   requiredIds.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -65,28 +66,37 @@ function validateStep(step) {
     }
   });
 
-  // Step 1 — at least one peril must be checked
-  if (step === 1) {
-    const perilChecked = ['perilDrought', 'perilTyphoon', 'perilPest']
-      .some(id => document.getElementById(id)?.checked);
-    if (!perilChecked) {
-      // Highlight the perils container
-      const perilSection = document.querySelector('#page-1 .custom-checkbox-label');
-      perilSection?.closest('div')?.classList.add('field-error');
+  // Step 0 — Contact numbers: at least one tag must be added
+  if (step === 0) {
+    const tags = document.querySelectorAll('#contactWrap .tag');
+    if (tags.length === 0) {
+      document.getElementById('contactWrap')?.classList.add('field-error');
       valid = false;
-    
-      const start = document.getElementById('coverageStart')?.value;
-      const end = document.getElementById('coverageEnd')?.value;
-      if (start && end && new Date(start) >= new Date(end)) {
-        document.getElementById('coverageEnd').classList.add('field-error');
-        showToast('Coverage end date must be after the start date.');
-        valid = false;
-    }
-  }
     }
   }
 
-  //Step 3 - Validate Planting and Harvest dates
+  // Step 1 — Perils & Coverage Dates
+  if (step === 1) {
+    // 1. Check Perils
+    const perilChecked = ['perilDrought', 'perilTyphoon', 'perilPest']
+      .some(id => document.getElementById(id)?.checked);
+    if (!perilChecked) {
+      const perilSection = document.querySelector('#page-1 .custom-checkbox-label');
+      perilSection?.closest('div')?.classList.add('field-error');
+      valid = false;
+    }
+
+    // 2. Check Chronological Dates
+    const start = document.getElementById('coverageStart')?.value;
+    const end = document.getElementById('coverageEnd')?.value;
+    if (start && end && new Date(start) >= new Date(end)) {
+      document.getElementById('coverageEnd').classList.add('field-error');
+      showToast('Coverage end date must be after the start date.');
+      valid = false;
+    }
+  }
+
+  // Step 3 — Validate Planting vs Harvest Dates
   if (step === 3) {
     const planted = document.getElementById('datePlanting')?.value;
     const harvest = document.getElementById('estHarvest')?.value;
@@ -97,11 +107,11 @@ function validateStep(step) {
     }
   }
 
-  // Step 4 — at least one CPI block must have a DAP value filled
+  // Step 4 — CPI Blocks (Must have DAP & No Duplicates)
   if (step === 4) {
     const dapInputs = [...document.querySelectorAll('.dap-input')];
     const dapValues = dapInputs.map(i => i.value.trim()).filter(v => v !== '');
-    
+
     if (dapValues.length === 0) {
       dapInputs.forEach(i => i.classList.add('field-error'));
       valid = false;
@@ -109,26 +119,22 @@ function validateStep(step) {
       // Check for duplicate days using a Set
       const uniqueDaps = new Set(dapValues);
       if (dapValues.length !== uniqueDaps.size) {
-        showToast('You cannot have multiple schedules for the same Day After Planting.');
-        valid = false; // Block them from proceeding
+        showToast('Cannot have multiple schedules for the same Day After Planting.');
+        valid = false; 
       }
     }
   }
 
-  // Step 0 — contact numbers: at least one tag must be added
-  if (step === 0) {
-    const tags = document.querySelectorAll('#contactWrap .tag');
-    if (tags.length === 0) {
-      document.getElementById('contactWrap')?.classList.add('field-error');
-      valid = false;
+  // Final fallback toast if basic fields are missing
+  if (!valid) {
+    const existingToast = document.getElementById('pcic-toast');
+    if (!existingToast) {
+        showToast('Please fill in all required fields correctly before continuing.');
     }
   }
 
-  if (!valid) {
-    showToast('Please fill in all required fields before continuing.');
-  }
-
   return valid;
+}
 
 
 /* ── Clear error highlight when user starts typing / selecting ── */
