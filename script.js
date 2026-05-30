@@ -262,7 +262,7 @@ function nextStep() {
       cpiSchedule: cpiSchedule
     };
 
-    // 5. Send data to your Node.js Backend!
+    // 5. Send data to  Node.js Backend
     fetch('http://localhost:3000/api/submit-insurance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -368,6 +368,20 @@ function addTag(e, wrapId) {
   const val   = input.value.trim();
   if (!val) return;
 
+  // Count existing tags and block if there are already 2
+  const existingTags = wrap.querySelectorAll('.tag');
+  if (existingTags.length >= 2) {
+    showToast('You can only add a maximum of 2 contact numbers.');
+    input.value = ''; // Clear what they were typing
+    return; // Stop the function from creating a new tag
+  }
+
+  //  Quick check to ensure it's at least a valid length (e.g., 7 for landline, 11 for mobile)
+  if (val.length < 7) {
+    showToast('Please enter a valid phone or mobile number.');
+    return;
+  }
+
   const tag = document.createElement('span');
   tag.className = 'tag';
   tag.innerHTML = `${val} <button onclick="removeTag(this)" aria-label="Remove ${val}">×</button>`;
@@ -376,10 +390,6 @@ function addTag(e, wrapId) {
 
   // Remove error highlight once a tag is added
   wrap.classList.remove('field-error');
-}
-
-function removeTag(btn) {
-  btn.parentElement.remove();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -424,10 +434,6 @@ function calcAge() {
    CPI — Dynamic blocks
 ══════════════════════════════════════════════════════════════ */
 
-/**
- * Builds a full CPI schedule block using a template literal.
- * Much safer and more readable than string concatenation.
- */
 function buildCPIBlock(isFirst) {
   const removeBtn = isFirst ? '' : `
     <button class="del-block-btn" onclick="removeCPIBlock(this)">
