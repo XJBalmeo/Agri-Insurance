@@ -111,28 +111,34 @@ app.post('/api/submit-insurance', async (req, res) => {
         if (data.cpiSchedule && data.cpiSchedule.length > 0) {
             for (let day of data.cpiSchedule) {
                 
-                await connection.execute(`
+                // 1. Insert the schedule and let MySQL auto-generate the CPIID
+                const [cpiResult] = await connection.execute(`
                     INSERT INTO CPITable (InsuranceID, DaysNoAfterPlanting) 
                     VALUES (?, ?)
                 `, [insuranceId, day.daysAfterPlanting]);
 
+                // 2. Catch the newly generated ID!
+                const generatedCpiId = cpiResult.insertId;
+
+                // 3. Save Materials using ONLY the generatedCpiId
                 if (day.materials && day.materials.length > 0) {
                     for (let mat of day.materials) {
                         await connection.execute(`
                             INSERT INTO CPIMaterialTable 
-                            (InsuranceID, DaysNoAfterPlanting, MaterialItem, MaterialQuantity, MaterialCost) 
-                            VALUES (?, ?, ?, ?, ?)
-                        `, [insuranceId, day.daysAfterPlanting, mat.item, mat.quantity, mat.cost]);
+                            (CPIID, MaterialItem, MaterialQuantity, MaterialCost) 
+                            VALUES (?, ?, ?, ?)
+                        `, [generatedCpiId, mat.item, mat.quantity, mat.cost]);
                     }
                 }
 
+                // 4. Save Labor using ONLY the generatedCpiId
                 if (day.labor && day.labor.length > 0) {
                     for (let lab of day.labor) {
                         await connection.execute(`
                             INSERT INTO CPILaborTable 
-                            (InsuranceID, DaysNoAfterPlanting, LaborWorkforce, LaborQuantity, LaborCost) 
-                            VALUES (?, ?, ?, ?, ?)
-                        `, [insuranceId, day.daysAfterPlanting, lab.workforce, lab.quantity, lab.cost]);
+                            (CPIID, LaborWorkforce, LaborQuantity, LaborCost) 
+                            VALUES (?, ?, ?, ?)
+                        `, [generatedCpiId, lab.workforce, lab.quantity, lab.cost]);
                     }
                 }
             }
@@ -156,14 +162,26 @@ app.post('/api/submit-insurance', async (req, res) => {
 });
 
 // ======================================================
-// 🔍 ROUTE: Get the Total Cost of an Insurance Policy
+// ROUTE: Get the Total Cost of an Insurance Policy
 // ======================================================
 app.get('/api/insurance/:id/cost', async (req, res) => {
     const insuranceId = req.params.id;
 
     try {
-        const [materialResult] = await db.query(`SELECT SUM(MaterialCost) AS TotalMaterialCost FROM CPIMaterialTable WHERE InsuranceID = ?`, [insuranceId]);
-        const [laborResult] = await db.query(`SELECT SUM(LaborCost) AS TotalLaborCost FROM CPILaborTable WHERE InsuranceID = ?`, [insuranceId]);
+        // We use JOINs now because the cost tables only know the CPIID, not the InsuranceID
+        const [materialResult] = await db.query(`
+            SELECT SUM(m.MaterialCost) AS TotalMaterialCost 
+            FROM CPIMaterialTable m
+            JOIN CPITable c ON m.CPIID = c.CPIID
+            WHERE c.InsuranceID = ?
+        `, [insuranceId]);
+
+        const [laborResult] = await db.query(`
+            SELECT SUM(l.LaborCost) AS TotalLaborCost 
+            FROM CPILaborTable l
+            JOIN CPITable c ON l.CPIID = c.CPIID
+            WHERE c.InsuranceID = ?
+        `, [insuranceId]);
 
         const matCost = Number(materialResult[0].TotalMaterialCost) || 0;
         const labCost = Number(laborResult[0].TotalLaborCost) || 0;
@@ -183,7 +201,7 @@ app.get('/api/insurance/:id/cost', async (req, res) => {
 });
 
 // ======================================================
-// 📊 FETCH DATA FOR ADMIN DASHBOARD
+// FETCH DATA FOR ADMIN DASHBOARD
 // ======================================================
 app.get('/api/tables/:tableName', async (req, res) => {
     const { tableName } = req.params;
