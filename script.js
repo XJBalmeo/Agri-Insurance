@@ -74,16 +74,44 @@ function validateStep(step) {
       const perilSection = document.querySelector('#page-1 .custom-checkbox-label');
       perilSection?.closest('div')?.classList.add('field-error');
       valid = false;
+    
+      const start = document.getElementById('coverageStart')?.value;
+      const end = document.getElementById('coverageEnd')?.value;
+      if (start && end && new Date(start) >= new Date(end)) {
+        document.getElementById('coverageEnd').classList.add('field-error');
+        showToast('Coverage end date must be after the start date.');
+        valid = false;
+    }
+  }
+    }
+  }
+
+  //Step 3 - Validate Planting and Harvest dates
+  if (step === 3) {
+    const planted = document.getElementById('datePlanting')?.value;
+    const harvest = document.getElementById('estHarvest')?.value;
+    if (planted && harvest && new Date(planted) >= new Date(harvest)) {
+      document.getElementById('estHarvest').classList.add('field-error');
+      showToast('Harvest date must be after the planting date.');
+      valid = false;
     }
   }
 
   // Step 4 — at least one CPI block must have a DAP value filled
   if (step === 4) {
     const dapInputs = [...document.querySelectorAll('.dap-input')];
-    const anyFilled = dapInputs.some(i => i.value.trim() !== '');
-    if (!anyFilled) {
+    const dapValues = dapInputs.map(i => i.value.trim()).filter(v => v !== '');
+    
+    if (dapValues.length === 0) {
       dapInputs.forEach(i => i.classList.add('field-error'));
       valid = false;
+    } else {
+      // Check for duplicate days using a Set
+      const uniqueDaps = new Set(dapValues);
+      if (dapValues.length !== uniqueDaps.size) {
+        showToast('You cannot have multiple schedules for the same Day After Planting.');
+        valid = false; // Block them from proceeding
+      }
     }
   }
 
@@ -400,6 +428,12 @@ function toggleTribe() {
   const isOn   = document.getElementById('ipToggle').checked;
   const field  = document.getElementById('tribeField');
   field.classList.toggle('hidden', !isOn);
+  
+  // Wipe the data if they turn the toggle off
+  if (!isOn) {
+    const tribeInput = document.getElementById('tribe');
+    if (tribeInput) tribeInput.value = '';
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════
