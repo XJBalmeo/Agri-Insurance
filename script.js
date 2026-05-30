@@ -129,7 +129,7 @@ function validateStep(step) {
   }
 
   return valid;
-}
+
 
 /* ── Clear error highlight when user starts typing / selecting ── */
 function clearErrorOnInput(el) {
