@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-const db = require('./db'); 
+const db = require('./db');
+const { sanitizeApplicationData, validateApplicationData } = require('./validators');
 require('dotenv').config();
 
 const app = express();
@@ -38,10 +39,18 @@ async function generateNextId(connection, tableName, idColumn, prefix, padding) 
 // ======================================================
 app.post('/api/submit-insurance', async (req, res) => {
     const connection = await db.getConnection();
-    
+
     try {
+        const data = req.body;
+
+        // PHASE 3: Trim whitespace first, then reject bad data before any DB work.
+        sanitizeApplicationData(data);
+        const validationErrors = validateApplicationData(data);
+        if (validationErrors.length > 0) {
+            return res.status(400).json({ error: 'Validation failed', details: validationErrors });
+        }
+
         await connection.beginTransaction();
-        const data = req.body; 
 
         // Generate CLEAN, sequential IDs dynamically!
         const proposerId = await generateNextId(connection, 'ProposerTable', 'ProposerID', 'P', 3);
@@ -156,8 +165,8 @@ app.get('/api/insurance/:id/cost', async (req, res) => {
         const [materialResult] = await db.query(`SELECT SUM(MaterialCost) AS TotalMaterialCost FROM CPIMaterialTable WHERE InsuranceID = ?`, [insuranceId]);
         const [laborResult] = await db.query(`SELECT SUM(LaborCost) AS TotalLaborCost FROM CPILaborTable WHERE InsuranceID = ?`, [insuranceId]);
 
-        const matCost = materialResult[0].TotalMaterialCost || 0;
-        const labCost = laborResult[0].TotalLaborCost || 0;
+        const matCost = Number(materialResult[0].TotalMaterialCost) || 0;
+        const labCost = Number(laborResult[0].TotalLaborCost) || 0;
         const grandTotal = matCost + labCost;
 
         res.status(200).json({

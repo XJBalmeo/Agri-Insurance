@@ -3,22 +3,25 @@
 A full-stack web application designed to digitize and streamline the application process for the Philippine Crop Insurance Corporation (PCIC). Built with a focus on data integrity, this system features a strictly normalized 3NF MySQL database, dynamic cost calculation, and transaction-safe backend routing.
 
 ## 🚀 Current Status
-**Phase 1 & 2 (Core Pipeline) — COMPLETE**
+**Phase 1, 2 & 3 (Core Pipeline + Validation) — COMPLETE**
 - [x] Design 3NF MySQL relational database schema.
 - [x] Build secure Node.js/Express REST API.
 - [x] Implement SQL Transactions (Commit/Rollback) to prevent orphaned data.
 - [x] Create sequential, dynamic ID generation (e.g., `INS001`, `P004`).
 - [x] Build responsive, step-by-step frontend using Tailwind CSS.
 - [x] Connect frontend to backend and handle edge cases (e.g., future date logic).
+- [x] Bulletproof backend validation: positive-number checks, contact-number regex, and input sanitization.
 
 ---
 
 ## 📋 Development Roadmap (Next Steps)
 
-### Phase 3: Bulletproof Validation (Data Integrity)
-- [ ] **Backend Number Validation:** Ensure numbers (like `farmArea` or `desiredAmountCover`) cannot be negative or zero on the backend.
-- [ ] **Contact Number Regex:** Validate that `contactNo` strictly follows the Philippine mobile format (starts with `09` and is exactly 11 digits).
-- [ ] **Input Sanitization:** Add backend logic to trim leading/trailing white spaces from all text inputs before saving to MySQL.
+### Phase 3: Bulletproof Validation (Data Integrity) — ✅ COMPLETE
+- [x] **Backend Number Validation:** Ensure numbers (like `farmArea` or `desiredAmountCover`) cannot be negative or zero on the backend. *(Also covers `plantationSize`, per-variety and CPI amounts; `soilPH` range-checked.)*
+- [x] **Contact Number Regex:** Validate that `contactNo` strictly follows the Philippine mobile format (starts with `09` and is exactly 11 digits).
+- [x] **Input Sanitization:** Add backend logic to trim leading/trailing white spaces from all text inputs before saving to MySQL.
+
+> Validation logic lives in `pcic-backend/validators.js`, run before the SQL transaction in `pcic-backend/server.js`. Invalid input returns `400` with all errors collected; clean data is trimmed and saved.
 
 ### Phase 4: User Experience (UX) Polish
 - [ ] **Prevent Double Submissions:** Disable the "Submit" button instantly upon click to prevent duplicate database entries on laggy connections.
@@ -38,8 +41,15 @@ A full-stack web application designed to digitize and streamline the application
 ## 💻 Local Setup Instructions
 1. Clone the repository and open the `pcic-backend` folder.
 2. Run `npm install` to download dependencies (Express, MySQL2, CORS, Dotenv).
-3. Create a `.env` file in the root directory and add your MySQL credentials:
+3. Create the database and tables by loading the schema:
+   ```bash
+   mysql -u root -p < schema.sql
+   ```
+4. Create a `.env` file in the `pcic-backend` folder and add your MySQL credentials:
    ```env
+   DB_HOST=127.0.0.1
    DB_USER=root
    DB_PASSWORD=your_password
    DB_NAME=pcic_insurance
+   ```
+5. Start the backend server with `node server.js` (runs on port 3000).
