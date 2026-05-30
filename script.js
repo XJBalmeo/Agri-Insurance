@@ -393,6 +393,10 @@ function resetForm() {
    TAG INPUT (multi-valued contact numbers)
 ══════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════
+   TAG INPUT (multi-valued contact numbers)
+══════════════════════════════════════════════════════════════ */
+
 function addTag(e, wrapId) {
   if (e.key !== 'Enter') return;
   e.preventDefault();
@@ -402,17 +406,17 @@ function addTag(e, wrapId) {
   const val   = input.value.trim();
   if (!val) return;
 
-  // Count existing tags and block if there are already 2
+  // 1. Count existing tags and block if there are already 2
   const existingTags = wrap.querySelectorAll('.tag');
   if (existingTags.length >= 2) {
     showToast('You can only add a maximum of 2 contact numbers.');
-    input.value = ''; // Clear what they were typing
-    return; // Stop the function from creating a new tag
+    input.value = ''; 
+    return; 
   }
 
-  //  Quick check to ensure it's at least a valid length (e.g., 7 for landline, 11 for mobile)
-  if (val.length < 7) {
-    showToast('Please enter a valid phone or mobile number.');
+  // check for numbers only, and at least 7 digits
+  if (val.length < 7 || !/^\d+$/.test(val)) {
+    showToast('Please enter a valid phone number (digits only).');
     return;
   }
 
@@ -422,8 +426,12 @@ function addTag(e, wrapId) {
   wrap.insertBefore(tag, input);
   input.value = '';
 
-  // Remove error highlight once a tag is added
   wrap.classList.remove('field-error');
+}
+
+// remove function
+function removeTag(btn) {
+  btn.parentElement.remove();
 }
 
 /* ══════════════════════════════════════════════════════════════
