@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PCIC Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="wrap">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon"><i class="ti ti-plant"></i></div>
+            <div>
+                <div class="logo-text">PCIC Admin</div>
+                <div class="logo-sub">Philippine Crop Insurance</div>
+            </div>
+        </div>
+        <div class="nav-section">Database Tables</div>
+        <button class="nav-item active" onclick="switchTable('cpilabor')" id="nav-cpilabor"><i class="ti ti-briefcase"></i> CPI Labor</button>
+        <button class="nav-item" onclick="switchTable('cpimaterial')" id="nav-cpimaterial"><i class="ti ti-package"></i> CPI Material</button>
+        <button class="nav-item" onclick="switchTable('cpi')" id="nav-cpi"><i class="ti ti-file-text"></i> CPI</button>
+        <button class="nav-item" onclick="switchTable('farm')" id="nav-farm"><i class="ti ti-plant-2"></i> Farm</button>
+        <button class="nav-item" onclick="switchTable('insurance')" id="nav-insurance"><i class="ti ti-shield-check"></i> Insurance</button>
+        <button class="nav-item" onclick="switchTable('proposer')" id="nav-proposer"><i class="ti ti-user"></i> Proposer</button>
+        <button class="nav-item" onclick="switchTable('variety')" id="nav-variety"><i class="ti ti-seeding"></i> Variety</button>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <div>
+                <h1 class="modal-ttl" id="ttl">CPI Labor Table</h1>
+                <p class="topbar-meta" id="meta">cpilabortable</p>
+            </div>
+            <div class="topbar-actions">
+                <button class="btn btn-ghost" id="edit-btn" onclick="openEdit()" disabled><i class="ti ti-edit"></i> Edit row</button>
+                <button class="btn btn-primary" onclick="openAdd()"><i class="ti ti-plus"></i> Add row</button>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="table-wrap">
+                <table>
+                    <thead id="thead"></thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+            <div id="pgn" style="margin-top: 1rem;"></div>
+        </div>
+    </main>
+</div>
+
+<div class="modal-root" id="modal-root">
+    <div class="modal-box">
+        <div class="modal-hdr">
+            <div class="modal-ttl" id="mttl">Add record</div>
+            <button onclick="closeModal()" style="background:none; border:none; cursor:pointer;"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="mform" id="mform"></div>
+        <div class="mfooter">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveRow()" id="sbtn">Save record</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:3000/api';
+
+    const TABLES = {
+        cpilabor: { 
+            label: 'CPI Labor Table', 
+            meta: 'CPILaborTable', 
+            cols: [
+            { n: 'LaborID', t: 'INT' },              
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },  
+            { n: 'DaysNoAfterPlanting', t: 'INT' },  
+            { n: 'LaborWorkforce', t: 'VARCHAR(30)' },
+            { n: 'LaborQuantity', t: 'INT' },
+            { n: 'LaborCost', t: 'FLOAT' }
+            ], 
+            rows: [] 
+        },
+        cpimaterial: { 
+            label: 'CPI Material Table', 
+            meta: 'cpimaterialtable', 
+            cols: [
+            { n: 'MaterialID', t: 'INT' },             
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },   
+            { n: 'DaysNoAfterPlanting', t: 'INT' },   
+            { n: 'MaterialItem', t: 'VARCHAR(30)' },   
+            { n: 'MaterialQuantity', t: 'INT' },
+            { n: 'MaterialCost', t: 'FLOAT' }
+            ], 
+            rows: [] 
+        },cpi: { 
+            label: 'CPI Table', 
+            meta: 'cpitable',
+            cols: [
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },
+            { n: 'DaysNoAfterPlanting', t: 'INT' }, 
+            ], 
+            rows: [] 
+        },farm: { 
+            label: 'Farm Information', 
+            meta: 'farmtable', 
+            cols: [
+            { n: 'PlantationID', t: 'VARCHAR(10)' },   
+            { n: 'PlantationName', t: 'VARCHAR(20)' }, 
+            { n: 'FarmAddress', t: 'VARCHAR(100)' },   
+            { n: 'FarmArea', t: 'FLOAT' },
+            { n: 'SoilType', t: 'VARCHAR(20)' },
+            { n: 'SoilPH', t: 'FLOAT' },
+            { n: 'Topography', t: 'VARCHAR(20)' },
+            { n: 'IrrigationType', t: 'VARCHAR(20)' }
+            ], 
+            rows: [] 
+        },
+        
+        insurance: { 
+            label: 'Insurance Policies', 
+            meta: 'insurancetable', 
+            cols: [
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },    
+            { n: 'ProposerID', t: 'VARCHAR(10)' },    
+            { n: 'Beneficiary', t: 'VARCHAR(30)' },    
+            { n: 'Crops', t: 'VARCHAR(20)' },          
+            { n: 'PlantationSize', t: 'FLOAT' },       
+            { n: 'CoverageStart', t: 'DATE' },         
+            { n: 'CoverageEnd', t: 'DATE' },           
+            { n: 'Flood', t: 'TINYINT(1)' },          
+            { n: 'Typhoon', t: 'TINYINT(1)' },
+            { n: 'Drought', t: 'TINYINT(1)' },
+            { n: 'Pests', t: 'TINYINT(1)' },
+            { n: 'DesiredAmountCover', t: 'FLOAT' },  
+            { n: 'PlantationID', t: 'VARCHAR(10)' },   
+            { n: 'SupervisingPT', t: 'VARCHAR(30)' },  
+            { n: 'PTDate', t: 'DATE' },                
+            { n: 'ProposerDate', t: 'DATE' }
+            ], 
+            rows: [] 
+        },
+        proposer: { 
+            label: 'Proposer Information', 
+            meta: 'proposertable',
+            cols: [
+            { n: 'ProposerID', t: 'VARCHAR(10)' },   
+            { n: 'ProposerName', t: 'VARCHAR(30)' },  
+            { n: 'Address', t: 'VARCHAR(100)' },     
+            { n: 'Birthday', t: 'DATE' },
+            { n: 'ContactNo', t: 'VARCHAR(15)' },     
+            { n: 'SecondaryContactNo', t: 'VARCHAR(15)' },
+            { n: 'CivilStatus', t: 'CHAR(2)' },
+            { n: 'Sex', t: 'CHAR(1)' },
+            { n: 'IP', t: 'TINYINT(1)' },            
+            { n: 'Tribe', t: 'VARCHAR(20)' },
+            { n: 'Spouse', t: 'VARCHAR(30)' },
+            { n: 'SpouseBirthday', t: 'DATE' }
+            ], 
+            rows: [] 
+        },
+        variety: { 
+            label: 'Crop Varieties', 
+            meta: 'varietytable', 
+            cols: [
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },  
+            { n: 'Variety', t: 'VARCHAR(20)' },       
+            { n: 'AreaPlanted', t: 'FLOAT' },
+            { n: 'DatePlanting', t: 'DATE' },         
+            { n: 'EstHarvestDate', t: 'DATE' },      
+            { n: 'AgeGroup', t: 'VARCHAR(20)' },
+            { n: 'NumTrees', t: 'INT' },
+            { n: 'AvgYield', t: 'FLOAT' }
+            ], 
+            rows: [] 
+        }
+    };
+
+    let cur = 'cpilabor', selIdx = null;
+    const T = () => TABLES[cur];
+
+    async function fetchTableData() {
+        try {
+            const response = await fetch('http://localhost:3000/api/tables/' + cur);
+            
+            if (!response.ok) throw new Error('Table fetch failed');
+            
+            const data = await response.json();
+            T().rows = data; 
+            render(); 
+        } catch (error) {
+            console.error("Connection Error:", error);
+            document.getElementById('tbody').innerHTML = 
+                `<tr><td colspan="${T().cols.length}" style="color:red; padding:2rem;">
+                    Error: ${error.message}. Check browser console (F12).
+                </td></tr>`;
+        }
+    }
+
+    function switchTable(name) {
+        cur = name;
+        selIdx = null;
+        
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.getElementById('nav-' + name).classList.add('active');
+        
+        document.getElementById('ttl').textContent = T().label;
+        document.getElementById('meta').textContent = T().meta;
+        
+        fetchTableData();
+    }
+
+    function render() {
+        let h = '<tr>';
+        T().cols.forEach(c => h += `<th>${c.n}</th>`);
+        h += '</tr>';
+        document.getElementById('thead').innerHTML = h;
+        
+        if (T().rows.length === 0) {
+            document.getElementById('tbody').innerHTML = 
+                `<tr><td colspan="${T().cols.length}">No records found in ${T().meta}.</td></tr>`;
+            return;
+        }
+
+        let b = '';
+        T().rows.forEach((row, ri) => {
+            b += `<tr onclick="selectRow(${ri})" class="${selIdx === ri ? 'selected-row' : ''}">`;
+            
+            T().cols.forEach(col => {
+                let val = row[col.n];
+                
+                if (col.t === 'DATE' && val) val = val.split('T')[0];
+                
+                b += `<td>${val !== null && val !== undefined ? val : '—'}</td>`;
+            });
+            b += '</tr>';
+        });
+        document.getElementById('tbody').innerHTML = b;
+    }
+
+    function selectRow(ri) {
+        selIdx = selIdx === ri ? null : ri;
+        document.getElementById('edit-btn').disabled = selIdx === null;
+        render();
+    }
+
+    window.onload = fetchTableData;
+</script>
+</body>
+</html>
