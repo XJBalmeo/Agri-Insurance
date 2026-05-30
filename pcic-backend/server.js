@@ -173,6 +173,34 @@ app.get('/api/insurance/:id/cost', async (req, res) => {
     }
 });
 
+// ======================================================
+// 📊 FETCH DATA FOR ADMIN DASHBOARD
+// ======================================================
+app.get('/api/tables/:tableName', async (req, res) => {
+    const { tableName } = req.params;
+    const tableMap = {
+        'cpilabor': 'CPILaborTable',
+        'cpimaterial': 'CPIMaterialTable',
+        'cpi': 'CPITable',
+        'farm': 'FarmTable',
+        'insurance': 'InsuranceTable',
+        'proposer': 'ProposerTable',
+        'variety': 'VarietyTable'
+    };
+
+    const targetTable = tableMap[tableName];
+    if (!targetTable) return res.status(400).send("Table mapping missing");
+
+    try {
+        const [rows] = await db.query(`SELECT * FROM ${targetTable}`);
+        console.log(`Successfully fetched ${rows.length} rows from ${targetTable}`);
+        res.json(rows);
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
