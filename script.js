@@ -491,11 +491,13 @@ function toggleTribe() {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   AGE GROUP (derived from date of planting)
+   AGE GROUP (Calculates duration from Planting to Harvest)
 ══════════════════════════════════════════════════════════════ */
 function calcAge(suffix = '') {
   const dp = document.getElementById('datePlanting' + suffix)?.value;
+  const dh = document.getElementById('estHarvest' + suffix)?.value;
   const el = document.getElementById('ageGroup' + suffix);
+  
   if (!el) return;
 
   if (!dp) {
@@ -504,24 +506,36 @@ function calcAge(suffix = '') {
   }
 
   const planted = new Date(dp);
-  const now     = new Date();
-  let yrs = now.getFullYear() - planted.getFullYear();
-  let mos = now.getMonth()    - planted.getMonth();
-
-  if (mos < 0) { yrs--; mos += 12; }
-
-  // 1. Build the readable text (e.g., "0 years, 2 months")
-  let label = `${yrs} year${yrs !== 1 ? 's' : ''}`;
-  if (mos) label += `, ${mos} month${mos !== 1 ? 's' : ''}`;
   
-  // 2. Calculate the exact float value (Years + Fraction of a year)
-  // Example: 0 years + (2 / 12) = 0.17
+  // Use the Harvest Date if they entered one. If not, fallback to today.
+  const targetDate = dh ? new Date(dh) : new Date();
+
+  // If planting date is somehow after the target date, return zero.
+  if (planted > targetDate) {
+    el.textContent = '0 years, 0 months — Age group: 0.00';
+    return;
+  }
+
+  let yrs = targetDate.getFullYear() - planted.getFullYear();
+  let mos = targetDate.getMonth() - planted.getMonth();
+
+  // If the specific day of the month hasn't been reached yet, subtract 1 month
+  if (targetDate.getDate() < planted.getDate()) {
+    mos--;
+  }
+
+  // If months dip below zero, borrow 1 year and add 12 months
+  if (mos < 0) {
+    yrs--;
+    mos += 12;
+  }
+
+  // Calculate exact decimal age (e.g., 3 months / 12 = 0.25)
   let decimalAge = (yrs + (mos / 12)).toFixed(2);
-  
-  // Prevent negative ages if they accidentally pick a future date
-  if (decimalAge < 0) decimalAge = "0.00";
 
-  // 3. Append it to the label
+  // Build the readable label
+  let label = `${yrs} year${yrs !== 1 ? 's' : ''}`;
+  label += `, ${mos} month${mos !== 1 ? 's' : ''}`;
   label += ` — Age group: ${decimalAge}`;
 
   el.textContent = label;
