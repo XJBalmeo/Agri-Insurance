@@ -510,13 +510,22 @@ function calcAge(suffix = '') {
 
   if (mos < 0) { yrs--; mos += 12; }
 
+  // 1. Build the readable text (e.g., "0 years, 2 months")
   let label = `${yrs} year${yrs !== 1 ? 's' : ''}`;
   if (mos) label += `, ${mos} month${mos !== 1 ? 's' : ''}`;
-  label += ` — Age group: ${yrs}`;
+  
+  // 2. Calculate the exact float value (Years + Fraction of a year)
+  // Example: 0 years + (2 / 12) = 0.17
+  let decimalAge = (yrs + (mos / 12)).toFixed(2);
+  
+  // Prevent negative ages if they accidentally pick a future date
+  if (decimalAge < 0) decimalAge = "0.00";
+
+  // 3. Append it to the label
+  label += ` — Age group: ${decimalAge}`;
 
   el.textContent = label;
 }
-
 /* ══════════════════════════════════════════════════════════════
    CPI — Dynamic blocks
 ══════════════════════════════════════════════════════════════ */
