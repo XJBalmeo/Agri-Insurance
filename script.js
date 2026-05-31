@@ -78,7 +78,7 @@ function validateStep(step) {
   // Step 1 — Perils & Coverage Dates
   if (step === 1) {
     // 1. Check Perils
-    const perilChecked = ['perilDrought', 'perilTyphoon', 'perilPest']
+    const perilChecked = ['perilFlood', 'perilDrought', 'perilTyphoon', 'perilPest']
       .some(id => document.getElementById(id)?.checked);
     if (!perilChecked) {
       const perilSection = document.querySelector('#page-1 .custom-checkbox-label');
@@ -275,7 +275,7 @@ function nextStep() {
 
       // Perils
       perils: {
-        flood: false, // Hidden in UI, defaulted to false
+        flood: document.getElementById('perilFlood')?.checked || false,
         typhoon: document.getElementById('perilTyphoon').checked,
         drought: document.getElementById('perilDrought').checked,
         pests: document.getElementById('perilPest').checked
@@ -389,9 +389,6 @@ function resetForm() {
   location.reload();
 }
 
-/* ══════════════════════════════════════════════════════════════
-   TAG INPUT (multi-valued contact numbers)
-══════════════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════════════
    TAG INPUT (multi-valued contact numbers)
@@ -645,6 +642,12 @@ window.addEventListener('DOMContentLoaded', () => {
     if (themeIcon) themeIcon.className = 'ti ti-sun text-lg';
   }
 
+  const civilStatusDropdown = document.getElementById('civilStatus');
+    if (civilStatusDropdown) {
+    civilStatusDropdown.addEventListener('change', toggleSpouse);
+    toggleSpouse(); // Run once on load to lock it by default
+  }
+
   /* 4. Apply DB-level field constraints (maxlength / min / max) */
   FIELD_CONSTRAINTS.forEach(({ id, maxlength, min, max }) => {
     const el = document.getElementById(id);
@@ -667,3 +670,36 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
 });
+
+ /* Disable Spouse if Single is selected */
+function toggleSpouse() {
+  const dropdown = document.getElementById('civilStatus');
+  const spouseName = document.getElementById('spouse');
+  const spouseBday = document.getElementById('spouseBday');
+  
+  if (!dropdown || !spouseName || !spouseBday) return;
+
+  const statusValue = dropdown.value.toLowerCase().trim();
+  const statusText = dropdown.options[dropdown.selectedIndex].text.toLowerCase().trim();
+
+  if (statusValue === 'married' || statusText === 'married') {
+    spouseName.disabled = false;
+    spouseBday.disabled = false;
+    spouseName.removeAttribute('readonly');
+    spouseBday.removeAttribute('readonly');
+    
+    spouseName.classList.remove('opacity-50', 'bg-gray-100', 'cursor-not-allowed');
+    spouseBday.classList.remove('opacity-50', 'bg-gray-100', 'cursor-not-allowed');
+  } else {
+    spouseName.disabled = true;
+    spouseBday.disabled = true;
+    spouseName.value = '';
+    spouseBday.value = '';
+    
+    spouseName.classList.remove('field-error');
+    spouseBday.classList.remove('field-error');
+    
+    spouseName.classList.add('opacity-50', 'bg-gray-100', 'cursor-not-allowed');
+    spouseBday.classList.add('opacity-50', 'bg-gray-100', 'cursor-not-allowed');
+  }
+}
