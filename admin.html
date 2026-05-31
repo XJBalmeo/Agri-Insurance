@@ -75,8 +75,7 @@
             meta: 'CPILaborTable', 
             cols: [
             { n: 'LaborID', t: 'INT' },              
-            { n: 'InsuranceID', t: 'VARCHAR(10)' },  
-            { n: 'DaysNoAfterPlanting', t: 'INT' },  
+            { n: 'CPIID', t: 'INT' },   
             { n: 'LaborWorkforce', t: 'VARCHAR(30)' },
             { n: 'LaborQuantity', t: 'INT' },
             { n: 'LaborCost', t: 'FLOAT' }
@@ -88,8 +87,7 @@
             meta: 'cpimaterialtable', 
             cols: [
             { n: 'MaterialID', t: 'INT' },             
-            { n: 'InsuranceID', t: 'VARCHAR(10)' },   
-            { n: 'DaysNoAfterPlanting', t: 'INT' },   
+            { n: 'CPIID', t: 'INT' },     
             { n: 'MaterialItem', t: 'VARCHAR(30)' },   
             { n: 'MaterialQuantity', t: 'INT' },
             { n: 'MaterialCost', t: 'FLOAT' }
@@ -99,6 +97,7 @@
             label: 'CPI Table', 
             meta: 'cpitable',
             cols: [
+            { n: 'CPIID', t: 'INT' },
             { n: 'InsuranceID', t: 'VARCHAR(10)' },
             { n: 'DaysNoAfterPlanting', t: 'INT' }, 
             ], 
