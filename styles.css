@@ -355,7 +355,21 @@ body {
 [data-theme="dark"] .field-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
 }
+/* Dark mode settings for Variety */
+[data-theme="dark"] .variety-title {
+    color: #80cbb3 !important; /* Lighter, readable green */
+}
 
+[data-theme="dark"] #addVarietyBtn {
+    border-color: #4b5563 !important; /* Subtle gray dashed border */
+    color: #9ca3af !important; /* Light gray text */
+}
+
+[data-theme="dark"] #addVarietyBtn:hover {
+    border-color: #4ade80 !important; /* Bright green border on hover */
+    color: #4ade80 !important; /* Bright green text on hover */
+    background-color: rgba(74, 222, 128, 0.1) !important; /* Faint green glow */
+}
 /* ── Respect reduced motion preference ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

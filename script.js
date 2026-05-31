@@ -1,6 +1,7 @@
 'use strict';
 
 /* ── State ────────────────────────────────────────────────────── */
+const DEV_MODE = true; //  SET TO FALSE BEFORE DEPLOYING!
 let cur = 0;
 const TOTAL = 6;
 
@@ -29,10 +30,10 @@ const REQUIRED = {
 /* ── Field constraints (maxlength / max / min) ───────────────── */
 // Applied on DOMContentLoaded so DB limits are enforced in-browser
 const FIELD_CONSTRAINTS = [
-  { id: 'soilType',       maxlength: 10  },
-  { id: 'topography',     maxlength: 10  },
+  { id: 'soilType',       maxlength: 20  },
+  { id: 'topography',     maxlength: 20  },
   { id: 'variety',        maxlength: 20  },
-  { id: 'irrigationType', maxlength: 15  },
+  { id: 'irrigationType', maxlength: 20  },
   { id: 'supervisingPT',  maxlength: 30  },
   { id: 'desiredCover',   max: 99999     },
   { id: 'soilPH',         min: 0.1, max: 14.9 },
@@ -47,6 +48,8 @@ const FIELD_CONSTRAINTS = [
  * Adds .field-error to empty inputs, shows a toast, returns bool.
  */
 function validateStep(step) {
+  //  DEV MODE: Instantly approve the step without checking anything
+  if (DEV_MODE) return true;
   // Clear previous error highlights
   document.querySelectorAll('.field-error').forEach(el => {
     el.classList.remove('field-error');
@@ -98,12 +101,36 @@ function validateStep(step) {
 
   // Step 3 — Validate Planting vs Harvest Dates
   if (step === 3) {
-    const planted = document.getElementById('datePlanting')?.value;
-    const harvest = document.getElementById('estHarvest')?.value;
-    if (planted && harvest && new Date(planted) >= new Date(harvest)) {
+    // Check Variety 1 Dates
+    const planted1 = document.getElementById('datePlanting')?.value;
+    const harvest1 = document.getElementById('estHarvest')?.value;
+    if (planted1 && harvest1 && new Date(planted1) >= new Date(harvest1)) {
       document.getElementById('estHarvest').classList.add('field-error');
       showToast('Harvest date must be after the planting date.');
       valid = false;
+    }
+
+    // Check Variety 2 (ONLY if it is currently visible)
+    const block2 = document.getElementById('varietyBlock2');
+    if (block2 && !block2.classList.contains('hidden')) {
+      const requiredBlock2 = ['variety2', 'areaPlanted2', 'datePlanting2', 'estHarvest2'];
+      
+      requiredBlock2.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.value.trim() === '') {
+          el.classList.add('field-error');
+          valid = false;
+        }
+      });
+
+      // Check Variety 2 Dates
+      const planted2 = document.getElementById('datePlanting2')?.value;
+      const harvest2 = document.getElementById('estHarvest2')?.value;
+      if (planted2 && harvest2 && new Date(planted2) >= new Date(harvest2)) {
+        document.getElementById('estHarvest2').classList.add('field-error');
+        showToast('Second variety harvest date must be after its planting date.');
+        valid = false;
+      }
     }
   }
 
@@ -282,16 +309,32 @@ function nextStep() {
       },
 
       // Varieties Array
-      varieties: [{
-        varietyName: document.getElementById('variety').value,
-        areaPlanted: parseFloat(document.getElementById('areaPlanted').value) || 0,
-        datePlanting: document.getElementById('datePlanting').value,
-        estHarvestDate: document.getElementById('estHarvest').value,
-        ageGroup: document.getElementById('ageGroup').textContent.split(': ')[1] || null,
-        numTrees: parseInt(document.getElementById('treesNum').value) || 0,
-        avgYield: parseFloat(document.getElementById('avgYield').value) || 0
-      }],
-
+      varieties: (function() {
+        const arr = [{
+          varietyName: document.getElementById('variety').value,
+          areaPlanted: parseFloat(document.getElementById('areaPlanted').value) || 0,
+          datePlanting: document.getElementById('datePlanting').value,
+          estHarvestDate: document.getElementById('estHarvest').value,
+          ageGroup: document.getElementById('ageGroup').textContent.split(': ')[1] || null,
+          numTrees: parseInt(document.getElementById('treesNum')?.value) || parseInt(document.getElementById('hillsNum')?.value) || 0,
+          avgYield: parseFloat(document.getElementById('avgYield').value) || 0
+        }];
+        
+        const block2 = document.getElementById('varietyBlock2');
+        if (block2 && !block2.classList.contains('hidden')) {
+          arr.push({
+            varietyName: document.getElementById('variety2').value,
+            areaPlanted: parseFloat(document.getElementById('areaPlanted2').value) || 0,
+            datePlanting: document.getElementById('datePlanting2').value,
+            estHarvestDate: document.getElementById('estHarvest2').value,
+            ageGroup: document.getElementById('ageGroup2').textContent.split(': ')[1] || null,
+            numTrees: parseInt(document.getElementById('treesNum2')?.value) || parseInt(document.getElementById('hillsNum2')?.value) || 0,
+            avgYield: parseFloat(document.getElementById('avgYield2')?.value) || 0
+          });
+        }
+        return arr;
+      })(),
+      
       // CPI Array
       cpiSchedule: cpiSchedule
     };
@@ -450,10 +493,9 @@ function toggleTribe() {
 /* ══════════════════════════════════════════════════════════════
    AGE GROUP (derived from date of planting)
 ══════════════════════════════════════════════════════════════ */
-
-function calcAge() {
-  const dp = document.getElementById('datePlanting')?.value;
-  const el = document.getElementById('ageGroup');
+function calcAge(suffix = '') {
+  const dp = document.getElementById('datePlanting' + suffix)?.value;
+  const el = document.getElementById('ageGroup' + suffix);
   if (!el) return;
 
   if (!dp) {
@@ -701,5 +743,32 @@ function toggleSpouse() {
     
     spouseName.classList.add('opacity-50', 'bg-gray-100', 'cursor-not-allowed');
     spouseBday.classList.add('opacity-50', 'bg-gray-100', 'cursor-not-allowed');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SECOND VARIETY TOGGLE
+══════════════════════════════════════════════════════════════ */
+function toggleVariety2(show) {
+  const block2 = document.getElementById('varietyBlock2');
+  const addBtn = document.getElementById('addVarietyBtn');
+  
+  if (show) {
+    block2.classList.remove('hidden');
+    addBtn.classList.add('hidden');
+  } else {
+    block2.classList.add('hidden');
+    addBtn.classList.remove('hidden');
+    
+    // Clear out the data if they change their mind and remove it
+    document.getElementById('variety2').value = '';
+    document.getElementById('areaPlanted2').value = '';
+    document.getElementById('datePlanting2').value = '';
+    document.getElementById('estHarvest2').value = '';
+    
+    // Clear error highlights just in case
+    document.querySelectorAll('#varietyBlock2 .field-error').forEach(el => {
+      el.classList.remove('field-error');
+    });
   }
 }
