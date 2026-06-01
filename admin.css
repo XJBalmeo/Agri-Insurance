@@ -123,21 +123,6 @@ td { padding: 12px; border-bottom: 1px solid var(--border-color); }
 .btn-primary:hover { background: var(--pcic-green-hover); }
 .btn-ghost { background: #fff; border-color: var(--border-color); color: var(--text-secondary); }
 
-.modal-root {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(15, 23, 42, 0.6); 
-  backdrop-filter: blur(4px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999; 
-}
-
-.modal-root.open { display: flex; }
 
 .modal-box {
   background: #fff;
@@ -148,19 +133,22 @@ td { padding: 12px; border-bottom: 1px solid var(--border-color); }
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
 }
 
-.modal-hdr { display: flex; justify-content: space-between; margin-bottom: 20px; }
 .modal-ttl { font-size: 18px; font-weight: 600; }
 
-.mform { display: flex; flex-direction: column; gap: 16px; }
-.fgrp { display: flex; flex-direction: column; gap: 6px; }
-.flbl { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-.fgrp input {
-  padding: 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 14px;
+.field-input{
   width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: 1px solid #4a5568; /* Darker border for the dark theme */
+  border-radius: 12px;
+  color: black;
+  outline: none;
+  box-sizing: border-box;
 }
 
-.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.mfooter { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+.modal-btn {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 5%;
+}
