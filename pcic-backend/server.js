@@ -52,34 +52,103 @@ app.post('/api/submit-insurance', async (req, res) => {
 
         await connection.beginTransaction();
 
-        // Generate CLEAN, sequential IDs dynamically!
-        const proposerId = await generateNextId(connection, 'ProposerTable', 'ProposerID', 'P', 3);
-        const plantationId = await generateNextId(connection, 'FarmTable', 'PlantationID', 'F', 3);
+        // ==========================================
+        // 1. CHECK FOR EXISTING PROPOSER OR CREATE NEW
+        // ==========================================
+        let proposerId;
+        const [existingProposer] = await connection.execute(
+            `SELECT ProposerID FROM ProposerTable WHERE ProposerName = ? AND Birthday = ? LIMIT 1`,
+            [data.proposerName, data.birthday]
+        );
+
+        if (existingProposer.length > 0) {
+            proposerId = existingProposer[0].ProposerID;
+
+            //  Check for Active Policies
+            const [activePolicies] = await connection.execute(
+                `SELECT InsuranceID, CoverageEnd FROM InsuranceTable 
+                 WHERE ProposerID = ? AND CoverageEnd >= CURDATE() LIMIT 1`,
+                [proposerId]
+            );
+
+            // If an active policy is found, abort
+            if (activePolicies.length > 0) {
+                await connection.rollback(); 
+                const endDate = new Date(activePolicies[0].CoverageEnd).toLocaleDateString();
+                return res.status(400).json({ 
+                    error: `Application rejected. This farmer already has an active policy (${activePolicies[0].InsuranceID}) that does not expire until ${endDate}.` 
+                });
+            }
+
+            // Update their old profile with their newest details
+            await connection.execute(`
+                UPDATE ProposerTable 
+                SET Address = ?, ContactNo = ?, SecondaryContactNo = ?, CivilStatus = ?, Sex = ?, IP = ?, Tribe = ?, Spouse = ?, SpouseBirthday = ?
+                WHERE ProposerID = ?
+            `, [
+                data.address, data.contactNo, data.secondaryContactNo || null, 
+                data.civilStatus, data.sex, data.isIP ? 1 : 0, data.tribe || null, 
+                data.spouse || null, data.spouseBirthday || null, 
+                proposerId
+            ]);
+
+        } else {
+            // New Proposer! Generate ID and insert
+            proposerId = await generateNextId(connection, 'ProposerTable', 'ProposerID', 'P', 3);
+            
+            await connection.execute(`
+                INSERT INTO ProposerTable 
+                (ProposerID, ProposerName, Address, Birthday, ContactNo, SecondaryContactNo, CivilStatus, Sex, IP, Tribe, Spouse, SpouseBirthday) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                proposerId, data.proposerName, data.address, data.birthday, 
+                data.contactNo, data.secondaryContactNo || null, data.civilStatus, 
+                data.sex, data.isIP ? 1 : 0, data.tribe || null, 
+                data.spouse || null, data.spouseBirthday || null
+            ]);
+        }
+
+        // ==========================================
+        // 2. CHECK FOR EXISTING FARM OR CREATE NEW
+        // ==========================================
+        let plantationId;
+        const [existingFarm] = await connection.execute(
+            `SELECT PlantationID FROM FarmTable WHERE PlantationName = ? AND FarmAddress = ? LIMIT 1`,
+            [data.plantationName, data.farmAddress]
+        );
+
+        if (existingFarm.length > 0) {
+            plantationId = existingFarm[0].PlantationID;
+
+            // If Farm already exists, Update to the latest area size, soil type, irrigation, etc.
+            await connection.execute(`
+                UPDATE FarmTable 
+                SET FarmArea = ?, SoilType = ?, SoilPH = ?, Topography = ?, IrrigationType = ?
+                WHERE PlantationID = ?
+            `, [
+                data.farmArea, data.soilType, data.soilPH, data.topography, data.irrigationType,
+                plantationId
+            ]);
+
+        } else {
+            // else Generate ID and insert
+            plantationId = await generateNextId(connection, 'FarmTable', 'PlantationID', 'F', 3);
+            
+            await connection.execute(`
+                INSERT INTO FarmTable 
+                (PlantationID, PlantationName, FarmAddress, FarmArea, SoilType, SoilPH, Topography, IrrigationType) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                plantationId, data.plantationName, data.farmAddress, data.farmArea, 
+                data.soilType, data.soilPH, data.topography, data.irrigationType
+            ]);
+        }
+
+        // ==========================================
+        // 3. ALWAYS CREATE A NEW INSURANCE RECORD
+        // ==========================================
         const insuranceId = await generateNextId(connection, 'InsuranceTable', 'InsuranceID', 'INS', 3);
-
-        // 1. PROPOSER TABLE
-        await connection.execute(`
-            INSERT INTO ProposerTable 
-            (ProposerID, ProposerName, Address, Birthday, ContactNo, SecondaryContactNo, CivilStatus, Sex, IP, Tribe, Spouse, SpouseBirthday) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            proposerId, data.proposerName, data.address, data.birthday, 
-            data.contactNo, data.secondaryContactNo || null, data.civilStatus, 
-            data.sex, data.isIP ? 1 : 0, data.tribe || null, 
-            data.spouse || null, data.spouseBirthday || null
-        ]);
-
-        // 2. FARM TABLE
-        await connection.execute(`
-            INSERT INTO FarmTable 
-            (PlantationID, PlantationName, FarmAddress, FarmArea, SoilType, SoilPH, Topography, IrrigationType) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            plantationId, data.plantationName, data.farmAddress, data.farmArea, 
-            data.soilType, data.soilPH, data.topography, data.irrigationType
-        ]);
-
-        // 3. INSURANCE TABLE
+        
         await connection.execute(`
             INSERT INTO InsuranceTable 
             (InsuranceID, ProposerID, Beneficiary, Crops, PlantationSize, CoverageStart, CoverageEnd, Flood, Typhoon, Drought, Pests, DesiredAmountCover, PlantationID, SupervisingPT, PTDate, ProposerDate) 
@@ -93,7 +162,9 @@ app.post('/api/submit-insurance', async (req, res) => {
             data.supervisingPT, data.ptDate, data.proposerDate || null
         ]);
 
+        // ==========================================
         // 4. VARIETY TABLE
+        // ==========================================
         if (data.varieties && data.varieties.length > 0) {
             for (let v of data.varieties) {
                 await connection.execute(`
@@ -107,7 +178,9 @@ app.post('/api/submit-insurance', async (req, res) => {
             }
         }
 
-        // 5, 6, & 7. CPI SCHEDULE, MATERIALS, AND LABOR
+        // ==========================================
+        // 5. CPI SCHEDULE, MATERIALS, AND LABOR
+        // ==========================================
         if (data.cpiSchedule && data.cpiSchedule.length > 0) {
             for (let day of data.cpiSchedule) {
                 
