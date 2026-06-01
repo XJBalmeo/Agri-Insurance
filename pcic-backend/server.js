@@ -219,6 +219,62 @@ app.get('/api/tables/:tableName', async (req, res) => {
     }
 });
 
+// ======================================================
+// 🗑️ DELETE ROUTE: HANDLE ALL TABLES
+// ======================================================
+app.delete('/api/tables/:tableName/:id', async (req, res) => {
+    const { tableName } = req.params;
+    const idValue = req.params.id;
+
+    const tableMap = {
+        'cpilabor': 'CPILaborTable',
+        'cpimaterial': 'CPIMaterialTable',
+        'cpi': 'CPITable',
+        'farm': 'FarmTable',
+        'insurance': 'InsuranceTable',
+        'proposer': 'ProposerTable',
+        'variety': 'VarietyTable'
+    };
+
+    const targetTable = tableMap[tableName];
+    if (!targetTable) return res.status(400).json({ message: "Table not found" });
+
+    let idColumn;
+    switch (tableName) {
+        case 'cpilabor':
+        case 'cpimaterial':
+        case 'cpi':
+            idColumn = 'CPIID';
+            break;
+        case 'insurance':
+        case 'variety':
+            idColumn = 'InsuranceID';
+            break;
+        case 'farm':
+            idColumn = 'PlantationID';
+            break;
+        case 'proposer':
+            idColumn = 'ProposerID';
+            break;
+        default:
+            idColumn = 'ID';
+    }
+
+    try {
+        const sql = `DELETE FROM ${targetTable} WHERE ${idColumn} = ?`;
+        const [result] = await db.execute(sql, [idValue]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Record not found" });
+        }
+
+        res.json({ message: `Successfully deleted from ${targetTable}` });
+    } catch (error) {
+        console.error("Delete Error:", error);
+        res.status(500).json({ message: "Database error", details: error.message });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
