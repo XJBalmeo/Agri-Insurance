@@ -1,7 +1,7 @@
 'use strict';
 
 /* ── State ────────────────────────────────────────────────────── */
-const DEV_MODE = true; //  SET TO FALSE BEFORE DEPLOYING!
+const DEV_MODE = false; //  SET TO FALSE BEFORE DEPLOYING!
 let cur = 0;
 const TOTAL = 6;
 
