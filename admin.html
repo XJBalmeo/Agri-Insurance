@@ -296,9 +296,6 @@
                 
                 if (!targetInsurance) return alert("Insurance record not found");
 
-                const pID = targetInsurance.ProposerID;
-                const fID = targetInsurance.PlantationID;
-
                 const relatedCpiIds = allCpiData
                     .filter(row => row.InsuranceID === idValue)
                     .map(row => row.CPIID);
@@ -313,9 +310,6 @@
                 }
                 
                 await fetch(`${API_BASE}/tables/variety/${idValue}`, { method: 'DELETE' });
-
-                await fetch(`${API_BASE}/tables/proposer/${pID}`, { method: 'DELETE' });
-                await fetch(`${API_BASE}/tables/farm/${fID}`, { method: 'DELETE' });
             }
 
             const response = await fetch(`${API_BASE}/tables/${cur}/${idValue}`, { 
