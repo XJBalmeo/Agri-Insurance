@@ -323,14 +323,22 @@ app.delete('/api/tables/:tableName/:id', async (req, res) => {
 
     let idColumn;
     switch (tableName) {
-        case 'cpilabor':
-        case 'cpimaterial':
         case 'cpi':
             idColumn = 'CPIID';
             break;
+        case 'cpilabor':
+            idColumn = 'LaborID';
+            break;
+        case 'cpimaterial':
+            idColumn = 'MaterialID';
+            break;
         case 'insurance':
-        case 'variety':
             idColumn = 'InsuranceID';
+            break;
+        case 'variety':
+            // VarietyTable's own PK — deleting by InsuranceID here would wipe
+            // every variety of a policy, not the single row the caller named.
+            idColumn = 'VarietyID';
             break;
         case 'farm':
             idColumn = 'PlantationID';
@@ -354,6 +362,88 @@ app.delete('/api/tables/:tableName/:id', async (req, res) => {
     } catch (error) {
         console.error("Delete Error:", error);
         res.status(500).json({ message: "Database error", details: error.message });
+    }
+});
+
+// ======================================================
+// 🗑️ CASCADE DELETE: ONE CPI BLOCK + ITS MATERIALS/LABOR
+// Wrapped in a transaction so children and parent vanish together.
+// ======================================================
+app.delete('/api/cpi/:id', async (req, res) => {
+    const cpiId = req.params.id;
+    const connection = await db.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        // Children first — the foreign keys forbid deleting the CPI row
+        // while materials/labor still reference its CPIID.
+        await connection.execute(`DELETE FROM CPILaborTable WHERE CPIID = ?`, [cpiId]);
+        await connection.execute(`DELETE FROM CPIMaterialTable WHERE CPIID = ?`, [cpiId]);
+
+        const [result] = await connection.execute(`DELETE FROM CPITable WHERE CPIID = ?`, [cpiId]);
+        if (result.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: "CPI record not found" });
+        }
+
+        await connection.commit();
+        res.json({ message: `Successfully deleted CPI ${cpiId} and its materials/labor.` });
+    } catch (error) {
+        await connection.rollback();
+        console.error("CPI Cascade Delete Error:", error);
+        res.status(500).json({ message: "Database error", details: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
+// ======================================================
+// 🗑️ CASCADE DELETE: A WHOLE INSURANCE POLICY
+// Removes every dependent row (CPI labor/materials, CPI blocks, varieties)
+// and the policy itself in a single transaction. Replaces the old admin-side
+// cascade that fired a dozen un-transacted requests from the browser.
+// ======================================================
+app.delete('/api/insurance/:id', async (req, res) => {
+    const insuranceId = req.params.id;
+    const connection = await db.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        // Grandchildren: labor + materials, reached via their CPI parent.
+        await connection.execute(`
+            DELETE l FROM CPILaborTable l
+            JOIN CPITable c ON l.CPIID = c.CPIID
+            WHERE c.InsuranceID = ?
+        `, [insuranceId]);
+        await connection.execute(`
+            DELETE m FROM CPIMaterialTable m
+            JOIN CPITable c ON m.CPIID = c.CPIID
+            WHERE c.InsuranceID = ?
+        `, [insuranceId]);
+
+        // Children: CPI blocks and varieties.
+        await connection.execute(`DELETE FROM CPITable WHERE InsuranceID = ?`, [insuranceId]);
+        await connection.execute(`DELETE FROM VarietyTable WHERE InsuranceID = ?`, [insuranceId]);
+
+        // Finally the policy itself.
+        const [result] = await connection.execute(
+            `DELETE FROM InsuranceTable WHERE InsuranceID = ?`, [insuranceId]
+        );
+        if (result.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: "Insurance record not found" });
+        }
+
+        await connection.commit();
+        res.json({ message: `Successfully deleted ${insuranceId} and all related records.` });
+    } catch (error) {
+        await connection.rollback();
+        console.error("Insurance Cascade Delete Error:", error);
+        res.status(500).json({ message: "Database error", details: error.message });
+    } finally {
+        connection.release();
     }
 });
 
