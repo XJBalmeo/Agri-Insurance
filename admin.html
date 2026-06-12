@@ -226,25 +226,31 @@
         T().cols.forEach(c => h += `<th>${c.n}</th>`);
         h += '</tr>';
         document.getElementById('thead').innerHTML = h;
-        
+
+        const tbody = document.getElementById('tbody');
+        tbody.innerHTML = '';
+
         if (T().rows.length === 0) {
-            document.getElementById('tbody').innerHTML = 
+            tbody.innerHTML =
                 `<tr><td colspan="${T().cols.length}">No records found in ${T().meta}.</td></tr>`;
             return;
         }
 
-        let b = '';
         T().rows.forEach((row) => {
+            const tr = document.createElement('tr');
             T().cols.forEach(col => {
                 let val = row[col.n];
-                
+
                 if (col.t === 'DATE' && val) val = val.split('T')[0];
-                
-                b += `<td>${val !== null && val !== undefined ? val : '—'}</td>`;
+
+                const td = document.createElement('td');
+                // textContent renders DB values as plain text, so HTML/scripts
+                // submitted through the public form can never execute here.
+                td.textContent = (val !== null && val !== undefined) ? val : '—';
+                tr.appendChild(td);
             });
-            b += '</tr>';
+            tbody.appendChild(tr);
         });
-        document.getElementById('tbody').innerHTML = b;
     }
 
     function openDelete() {
@@ -281,41 +287,20 @@
         if (!confirm(`Deleting this row will also delete all the corresponding rows in the other tables. Are you sure you want to delete this row?`)) return;
 
         try {
-            if (cur == 'cpi') {
-                await fetch(`${API_BASE}/tables/cpilabor/${idValue}`, { method: 'DELETE' });
-                await fetch(`${API_BASE}/tables/cpimaterial/${idValue}`, { method: 'DELETE' });
-            } 
-            else if (cur == 'insurance') {
-                const cpiResponse = await fetch(`${API_BASE}/tables/cpi`);
-                const allCpiData = await cpiResponse.json();
-
-                const insuranceResponse = await fetch(`${API_BASE}/tables/insurance`);
-                const allInsuranceData = await insuranceResponse.json();
-
-                const targetInsurance = allInsuranceData.find(row => row.InsuranceID === idValue);
-                
-                if (!targetInsurance) return alert("Insurance record not found");
-
-                const relatedCpiIds = allCpiData
-                    .filter(row => row.InsuranceID === idValue)
-                    .map(row => row.CPIID);
-
-                for (const cpiId of relatedCpiIds) {
-                    await fetch(`${API_BASE}/tables/cpilabor/${cpiId}`, { method: 'DELETE' });
-                    await fetch(`${API_BASE}/tables/cpimaterial/${cpiId}`, { method: 'DELETE' });
-                }
-
-                for (const cpiId of relatedCpiIds) {
-                    await fetch(`${API_BASE}/tables/cpi/${cpiId}`, { method: 'DELETE' });
-                }
-                
-                await fetch(`${API_BASE}/tables/variety/${idValue}`, { method: 'DELETE' });
+            // The cascade now lives in the backend, inside a single transaction,
+            // so the browser makes exactly one request per delete. Insurance and
+            // CPI use dedicated cascade routes; anything else hits the generic
+            // single-row route.
+            let endpoint;
+            if (cur === 'insurance') {
+                endpoint = `${API_BASE}/insurance/${idValue}`;
+            } else if (cur === 'cpi') {
+                endpoint = `${API_BASE}/cpi/${idValue}`;
+            } else {
+                endpoint = `${API_BASE}/tables/${cur}/${idValue}`;
             }
 
-            const response = await fetch(`${API_BASE}/tables/${cur}/${idValue}`, { 
-                method: 'DELETE' 
-            });
-
+            const response = await fetch(endpoint, { method: 'DELETE' });
             const result = await response.json();
 
             if (response.ok) {
