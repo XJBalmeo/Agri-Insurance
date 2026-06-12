@@ -113,7 +113,10 @@ function validateStep(step) {
     // Check Variety 2 (ONLY if it is currently visible)
     const block2 = document.getElementById('varietyBlock2');
     if (block2 && !block2.classList.contains('hidden')) {
-      const requiredBlock2 = ['variety2', 'areaPlanted2', 'datePlanting2', 'estHarvest2'];
+      const requiredBlock2 = [
+        'variety2', 'areaPlanted2', 'datePlanting2', 'estHarvest2',
+        'hillsNum2', 'treesNum2', 'avgYield2',
+      ];
       
       requiredBlock2.forEach(id => {
         const el = document.getElementById(id);
@@ -362,8 +365,14 @@ function nextStep() {
             document.getElementById('refNumber').textContent = data.generatedInsuranceID;
             showToast('Application submitted successfully!', 'success');
         } else {
-            // BACKEND REJECTED IT
-            showToast('Error: ' + (data.error || 'Failed to save application.'));
+            // BACKEND REJECTED IT.
+            // Validation failures arrive as { error, details: [...] } — show the
+            // specific field messages so the user knows what to fix. Other 400s
+            // (e.g. an active-policy rejection) only carry `error`.
+            const message = Array.isArray(data.details) && data.details.length
+                ? data.details.join(' ')
+                : (data.error || 'Failed to save application.');
+            showToast('Error: ' + message);
             btnNext.innerHTML = originalText;
             btnNext.disabled = false;
         }
