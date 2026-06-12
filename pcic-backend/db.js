@@ -1,5 +1,8 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config(); // loads  .env file
+const path = require('path');
+// Load the .env that sits next to this file, regardless of which
+// directory `node` was launched from (dotenv defaults to process.cwd()).
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
