@@ -1,2 +1,5 @@
 node_modules/
 .env
+CLAUDE.local.md
+.DS_Store
+.playwright-mcp/
