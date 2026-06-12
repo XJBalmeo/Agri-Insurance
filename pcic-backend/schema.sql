@@ -1,7 +1,9 @@
 -- ======================================================
 -- PCIC High Value Crop Insurance System
--- 3NF schema reconstructed from the INSERT statements in server.js.
+-- 3NF schema matching the INSERT statements in server.js.
 -- Custom string PKs (P001 / F001 / INS001) match generateNextId().
+-- CPI child tables hang off an AUTO_INCREMENT CPIID surrogate key
+-- (server.js reads it via result.insertId after inserting a CPI row).
 -- ======================================================
 
 CREATE DATABASE IF NOT EXISTS pcic_insurance
@@ -95,11 +97,15 @@ CREATE TABLE VarietyTable (
 
 -- ------------------------------------------------------
 -- 5. CPI SCHEDULE (one row per days-after-planting block)
+-- CPIID is the surrogate PK that materials/labor reference;
+-- the UNIQUE key still guarantees one block per day per policy.
 -- ------------------------------------------------------
 CREATE TABLE CPITable (
+    CPIID               INT          NOT NULL AUTO_INCREMENT,
     InsuranceID         VARCHAR(10)  NOT NULL,
     DaysNoAfterPlanting INT          NOT NULL,
-    PRIMARY KEY (InsuranceID, DaysNoAfterPlanting),
+    PRIMARY KEY (CPIID),
+    UNIQUE KEY uq_cpi_insurance_day (InsuranceID, DaysNoAfterPlanting),
     CONSTRAINT fk_cpi_insurance FOREIGN KEY (InsuranceID) REFERENCES InsuranceTable(InsuranceID)
 ) ENGINE=InnoDB;
 
@@ -108,14 +114,12 @@ CREATE TABLE CPITable (
 -- ------------------------------------------------------
 CREATE TABLE CPIMaterialTable (
     MaterialID          INT            NOT NULL AUTO_INCREMENT,
-    InsuranceID         VARCHAR(10)    NOT NULL,
-    DaysNoAfterPlanting INT            NOT NULL,
+    CPIID               INT            NOT NULL,
     MaterialItem        VARCHAR(100)   NOT NULL,
     MaterialQuantity    INT            NOT NULL,
     MaterialCost        DECIMAL(12,2)  NOT NULL,
     PRIMARY KEY (MaterialID),
-    CONSTRAINT fk_material_cpi FOREIGN KEY (InsuranceID, DaysNoAfterPlanting)
-        REFERENCES CPITable(InsuranceID, DaysNoAfterPlanting)
+    CONSTRAINT fk_material_cpi FOREIGN KEY (CPIID) REFERENCES CPITable(CPIID)
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------------
@@ -123,12 +127,10 @@ CREATE TABLE CPIMaterialTable (
 -- ------------------------------------------------------
 CREATE TABLE CPILaborTable (
     LaborID             INT            NOT NULL AUTO_INCREMENT,
-    InsuranceID         VARCHAR(10)    NOT NULL,
-    DaysNoAfterPlanting INT            NOT NULL,
+    CPIID               INT            NOT NULL,
     LaborWorkforce      VARCHAR(100)   NOT NULL,
     LaborQuantity       INT            NOT NULL,
     LaborCost           DECIMAL(12,2)  NOT NULL,
     PRIMARY KEY (LaborID),
-    CONSTRAINT fk_labor_cpi FOREIGN KEY (InsuranceID, DaysNoAfterPlanting)
-        REFERENCES CPITable(InsuranceID, DaysNoAfterPlanting)
+    CONSTRAINT fk_labor_cpi FOREIGN KEY (CPIID) REFERENCES CPITable(CPIID)
 ) ENGINE=InnoDB;
