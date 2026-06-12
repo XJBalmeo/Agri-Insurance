@@ -25,6 +25,11 @@ function isPositiveNumber(value) {
     return Number.isFinite(Number(value)) && Number(value) > 0;
 }
 
+// A non-empty, parseable calendar date string (e.g. 'YYYY-MM-DD').
+function isValidDate(value) {
+    return typeof value === 'string' && value.trim() !== '' && Number.isFinite(Date.parse(value));
+}
+
 /**
  * Trim leading/trailing whitespace from every text input, including nested
  * varieties and CPI material/labor rows. Mutates `data` in place.
@@ -75,6 +80,21 @@ function validateApplicationData(data) {
         errors.push('Secondary contact number must start with 09 and be exactly 11 digits.');
     }
 
+    // --- Perils: must be an object with at least one peril selected ---
+    // Guards server.js reading data.perils.flood etc. — a missing `perils`
+    // would otherwise throw a TypeError and surface as a 500 with leaked internals.
+    if (!data.perils || typeof data.perils !== 'object'
+        || !(data.perils.flood || data.perils.typhoon || data.perils.drought || data.perils.pests)) {
+        errors.push('At least one peril (flood, typhoon, drought, or pests) must be selected.');
+    }
+
+    // --- Coverage dates: both valid, and end strictly after start ---
+    if (!isValidDate(data.coverageStart) || !isValidDate(data.coverageEnd)) {
+        errors.push('Coverage start and end dates are required and must be valid dates.');
+    } else if (new Date(data.coverageStart) >= new Date(data.coverageEnd)) {
+        errors.push('Coverage end date must be after the coverage start date.');
+    }
+
     // --- Positive numbers (must be > 0) ---
     if (!isPositiveNumber(data.farmArea)) {
         errors.push('Farm area must be a number greater than zero.');
@@ -92,7 +112,12 @@ function validateApplicationData(data) {
         errors.push('Soil pH must be a number between 0.1 and 14.9.');
     }
 
-    // --- Per-variety numbers ---
+    // --- At least one crop variety is required ---
+    if (!Array.isArray(data.varieties) || data.varieties.length === 0) {
+        errors.push('At least one crop variety is required.');
+    }
+
+    // --- Per-variety numbers and dates ---
     if (Array.isArray(data.varieties)) {
         data.varieties.forEach((v, i) => {
             const label = `Variety #${i + 1}`;
@@ -104,6 +129,11 @@ function validateApplicationData(data) {
             }
             if (!isPositiveNumber(v.avgYield)) {
                 errors.push(`${label}: average yield must be greater than zero.`);
+            }
+            if (!isValidDate(v.datePlanting) || !isValidDate(v.estHarvestDate)) {
+                errors.push(`${label}: planting and harvest dates are required and must be valid dates.`);
+            } else if (new Date(v.datePlanting) >= new Date(v.estHarvestDate)) {
+                errors.push(`${label}: harvest date must be after the planting date.`);
             }
         });
     }
