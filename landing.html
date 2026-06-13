@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PCIC High Value Crop Insurance</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css" />
 
   <script>
     tailwind.config = {
@@ -28,7 +28,7 @@
               300: '#5DCAA5',
               400: '#3DBFA0',
               500: '#1D9E75',
-              600: '#1D9E75',
+              600: '#178A66',
               700: '#0F6E56',
               800: '#085041',
               900: '#04342C',
@@ -93,6 +93,16 @@
         },
       },
     }
+  </script>
+
+  <script>
+    // Apply the saved theme BEFORE first paint so dark-mode users don't see a
+    // flash of the light UI. Runs synchronously in <head>, ahead of <body>.
+    try {
+      if (localStorage.getItem('theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch (e) {}
   </script>
 
   <style>
@@ -208,7 +218,7 @@
     [data-theme="dark"] .text-gray-900,
     [data-theme="dark"] .text-gray-800 { color: #F9FAFB !important; }
     [data-theme="dark"] .text-gray-500,
-    [data-theme="dark"] .text-gray-400 { color: #9CA3AF !important; }
+    [data-theme="dark"] .text-gray-500 { color: #9CA3AF !important; }
     [data-theme="dark"] .text-gray-300 { color: #D1D5DB !important; }
     [data-theme="dark"] .text-gray-200 { color: #E5E7EB !important; }
     [data-theme="dark"] .text-green-800 { color: #9FE1CB !important; } /* PCIC Logo text */
@@ -263,11 +273,11 @@
       </div>
 
       <div class="flex items-center gap-4">
-        <button id="themeToggle" onclick="toggleTheme()" class="text-gray-400 hover:text-green-700 hover:bg-gray-100 rounded-full p-2.5 transition-colors cursor-pointer" title="Toggle Dark Mode">
+        <button id="themeToggle" onclick="toggleTheme()" class="text-gray-500 hover:text-green-700 hover:bg-gray-100 rounded-full p-2.5 transition-colors cursor-pointer" title="Toggle Dark Mode">
           <i class="ti ti-moon text-lg" aria-hidden="true"></i>
         </button>
 
-        <div class="flex items-center gap-2 text-xs text-gray-400">
+        <div class="flex items-center gap-2 text-xs text-gray-500">
           <span class="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse"></span>
           System online
         </div>
@@ -287,7 +297,7 @@
         <span class="text-green-700">secure your future.</span>
       </h1>
 
-      <p class="opacity-0-init animate-fade-up-d2 text-gray-400 text-base leading-relaxed mb-10"
+      <p class="opacity-0-init animate-fade-up-d2 text-gray-500 text-base leading-relaxed mb-10"
          style="max-width: 460px;">
         Apply for high value crop insurance coverage in minutes. Trusted by thousands of Filipino farmers.
       </p>
@@ -372,27 +382,27 @@
     <div class="relative z-10 opacity-0-init animate-fade-up-d4 border-t border-b border-gray-100 py-4 overflow-hidden bg-white/70 backdrop-blur-sm">
       <div class="ticker-track" style="animation: marquee 28s linear infinite;">
         <div class="flex items-center gap-12 px-8 whitespace-nowrap">
-          <span class="text-xs text-gray-400 flex items-center gap-2"><i class="ti ti-users text-green-500" aria-hidden="true"></i> 52,000+ Registered farmers</span>
+          <span class="text-xs text-gray-500 flex items-center gap-2"><i class="ti ti-users text-green-500" aria-hidden="true"></i> 52,000+ Registered farmers</span>
           <span class="text-gray-200">|</span>
-          <span class="text-xs text-gray-400 flex items-center gap-2"><i class="ti ti-map-pin text-green-500" aria-hidden="true"></i> All 81 Philippine provinces covered</span>
+          <span class="text-xs text-gray-500 flex items-center gap-2"><i class="ti ti-map-pin text-green-500" aria-hidden="true"></i> All 81 Philippine provinces covered</span>
           <span class="text-gray-200">|</span>
-          <span class="text-xs text-gray-400 flex items-center gap-2"><i class="ti ti-plant-2 text-green-500" aria-hidden="true"></i> Mango, Rice, Corn, Banana & more</span>
+          <span class="text-xs text-gray-500 flex items-center gap-2"><i class="ti ti-plant-2 text-green-500" aria-hidden="true"></i> Mango, Rice, Corn, Banana & more</span>
           <span class="text-gray-200">|</span>
-          <span class="text-xs text-gray-400 flex items-center gap-2"><i class="ti ti-shield-check text-green-500" aria-hidden="true"></i> ₱2.4B total claims paid out</span>
+          <span class="text-xs text-gray-500 flex items-center gap-2"><i class="ti ti-shield-check text-green-500" aria-hidden="true"></i> ₱2.4B total claims paid out</span>
           <span class="text-gray-200">|</span>
-          <span class="text-xs text-gray-400 flex items-center gap-2"><i class="ti ti-clock text-green-500" aria-hidden="true"></i> Average 3-day claim processing</span>
+          <span class="text-xs text-gray-500 flex items-center gap-2"><i class="ti ti-clock text-green-500" aria-hidden="true"></i> Average 3-day claim processing</span>
           <span class="text-gray-200">|</span>
         </div>
         <div class="flex items-center gap-12 px-8 whitespace-nowrap" aria-hidden="true">
-          <span class="text-xs text-gray-400 flex items-center gap-2"><i class="ti ti-users text-green-500" aria-hidden="true"></i> 52,000+ Registered farmers</span>
+          <span class="text-xs text-gray-500 flex items-center gap-2"><i class="ti ti-users text-green-500" aria-hidden="true"></i> 52,000+ Registered farmers</span>
           <span class="text-gray-200">|</span>
-          <span class="text-xs text-gray-400 flex items-center gap-2"><i class="ti ti-map-pin text-green-500" aria-hidden="true"></i> All 81 Philippine provinces covered</span>
+          <span class="text-xs text-gray-500 flex items-center gap-2"><i class="ti ti-map-pin text-green-500" aria-hidden="true"></i> All 81 Philippine provinces covered</span>
           <span class="text-gray-200">|</span>
-          <span class="text-xs text-gray-400 flex items-center gap-2"><i class="ti ti-plant-2 text-green-500" aria-hidden="true"></i> Mango, Rice, Corn, Banana & more</span>
+          <span class="text-xs text-gray-500 flex items-center gap-2"><i class="ti ti-plant-2 text-green-500" aria-hidden="true"></i> Mango, Rice, Corn, Banana & more</span>
           <span class="text-gray-200">|</span>
-          <span class="text-xs text-gray-400 flex items-center gap-2"><i class="ti ti-shield-check text-green-500" aria-hidden="true"></i> ₱2.4B total claims paid out</span>
+          <span class="text-xs text-gray-500 flex items-center gap-2"><i class="ti ti-shield-check text-green-500" aria-hidden="true"></i> ₱2.4B total claims paid out</span>
           <span class="text-gray-200">|</span>
-          <span class="text-xs text-gray-400 flex items-center gap-2"><i class="ti ti-clock text-green-500" aria-hidden="true"></i> Average 3-day claim processing</span>
+          <span class="text-xs text-gray-500 flex items-center gap-2"><i class="ti ti-clock text-green-500" aria-hidden="true"></i> Average 3-day claim processing</span>
           <span class="text-gray-200">|</span>
         </div>
       </div>
@@ -400,7 +410,7 @@
 
     <section id="why-online" class="relative z-10 px-8 py-14 max-w-4xl mx-auto w-full">
       <h2 class="font-serif font-semibold text-gray-800 text-xl text-center mb-2 opacity-0-init animate-fade-up">Why apply online?</h2>
-      <p class="text-sm text-gray-400 text-center mb-10 opacity-0-init animate-fade-up-d1">Fast, paperless, and accessible from anywhere.</p>
+      <p class="text-sm text-gray-500 text-center mb-10 opacity-0-init animate-fade-up-d1">Fast, paperless, and accessible from anywhere.</p>
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
@@ -409,7 +419,7 @@
             <i class="ti ti-rocket text-green-600 text-lg" aria-hidden="true"></i>
           </div>
           <h3 class="font-semibold text-gray-800 text-sm mb-1.5">6-step guided form</h3>
-          <p class="text-xs text-gray-400 leading-relaxed">Complete your application in a structured, step-by-step process. No confusion, no missed fields.</p>
+          <p class="text-xs text-gray-500 leading-relaxed">Complete your application in a structured, step-by-step process. No confusion, no missed fields.</p>
         </div>
 
         <div class="step-card bg-white border border-gray-100 rounded-2xl p-5 opacity-0-init animate-fade-up-d2">
@@ -417,7 +427,7 @@
             <i class="ti ti-calculator text-green-600 text-lg" aria-hidden="true"></i>
           </div>
           <h3 class="font-semibold text-gray-800 text-sm mb-1.5">Auto-computed fields</h3>
-          <p class="text-xs text-gray-400 leading-relaxed">Derived values like Age Group and Total CPI Cost are automatically calculated — no manual math needed.</p>
+          <p class="text-xs text-gray-500 leading-relaxed">Derived values like Age Group and Total CPI Cost are automatically calculated — no manual math needed.</p>
         </div>
 
         <div class="step-card bg-white border border-gray-100 rounded-2xl p-5 opacity-0-init animate-fade-up-d3">
@@ -425,7 +435,7 @@
             <i class="ti ti-database text-green-600 text-lg" aria-hidden="true"></i>
           </div>
           <h3 class="font-semibold text-gray-800 text-sm mb-1.5">Stored securely</h3>
-          <p class="text-xs text-gray-400 leading-relaxed">Your data is saved to a normalized database, making claims and renewals faster and error-free.</p>
+          <p class="text-xs text-gray-500 leading-relaxed">Your data is saved to a normalized database, making claims and renewals faster and error-free.</p>
         </div>
 
       </div>
@@ -438,26 +448,9 @@
         Begin application
         <i class="ti ti-arrow-right text-base" aria-hidden="true"></i>
       </button>
-      <p class="text-xs text-gray-300 mt-3">Takes about 5–10 minutes to complete</p>
+      <p class="text-xs text-gray-500 mt-3">Takes about 5–10 minutes to complete</p>
     </div>
 
-  </div>
-
-  <div id="formPage" class="hidden">
-    <div class="min-h-screen flex items-center justify-center bg-gray-50">
-      <div class="text-center">
-        <div class="w-14 h-14 bg-green-50 border border-green-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <i class="ti ti-plant-2 text-green-700 text-2xl" aria-hidden="true"></i>
-        </div>
-        <p class="font-serif font-semibold text-green-800 text-lg mb-1">Loading application form…</p>
-        <p class="text-xs text-gray-400">Redirecting you to the form</p>
-        <div class="mt-4 flex justify-center gap-1">
-          <div class="w-1.5 h-1.5 rounded-full bg-green-400 animate-bounce" style="animation-delay:0s"></div>
-          <div class="w-1.5 h-1.5 rounded-full bg-green-400 animate-bounce" style="animation-delay:0.15s"></div>
-          <div class="w-1.5 h-1.5 rounded-full bg-green-400 animate-bounce" style="animation-delay:0.3s"></div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <script>

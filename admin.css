@@ -1,7 +1,8 @@
 :root {
-  --pcic-green: #1d6e4a;
-  --pcic-green-hover: #165a3d;
-  --pcic-accent: #f0fdf4;
+  /* Brand green unified with the public app (was #1d6e4a / #165a3d) */
+  --pcic-green: #0F6E56;
+  --pcic-green-hover: #085041;
+  --pcic-accent: #E1F5EE;
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
   --border-color: #e2e8f0;
@@ -101,6 +102,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   margin-top: 1rem;
+  overflow-x: auto;   /* wide tables (e.g. Insurance, 17 cols) scroll instead of clipping */
 }
 
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -122,6 +124,9 @@ td { padding: 12px; border-bottom: 1px solid var(--border-color); }
 .btn-primary { background: var(--pcic-green); color: #fff; }
 .btn-primary:hover { background: var(--pcic-green-hover); }
 .btn-ghost { background: #fff; border-color: var(--border-color); color: var(--text-secondary); }
+.btn-ghost:hover { background: var(--bg-main); border-color: #cbd5e0; }
+.btn-danger { background: #dc2626; color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
 
 
 .modal-box {
@@ -139,9 +144,9 @@ td { padding: 12px; border-bottom: 1px solid var(--border-color); }
   width: 100%;
   padding: 12px 16px;
   background: transparent;
-  border: 1px solid #4a5568; /* Darker border for the dark theme */
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  color: black;
+  color: var(--text-primary);
   outline: none;
   box-sizing: border-box;
 }
@@ -151,4 +156,108 @@ td { padding: 12px; border-bottom: 1px solid var(--border-color); }
     justify-content: center;
     gap: 12px;
     margin-top: 5%;
+}
+
+/* Login overlay — sits above everything until a session exists */
+.login-overlay {
+    display: none; /* shown via JS */
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.75);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 32px;
+    width: 320px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.login-msg {
+    color: #b91c1c;
+    font-size: 13px;
+    text-align: center;
+    min-height: 16px;
+    margin: 0;
+}
+
+.login-btn { justify-content: center; }
+
+/* Inline status dropdown in the Insurance table */
+.status-select {
+    padding: 4px 8px;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* Delete modal — centred overlay (mirrors the login overlay pattern) */
+.modal-overlay {
+    display: none;            /* shown as flex via JS */
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    z-index: 998;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+.modal-hr { border: none; border-top: 1px solid var(--border-color); margin: 12px 0 16px; }
+.modal-label { font-size: 13px; color: var(--text-secondary); }
+.modal-box .field-input { margin-top: 8px; }
+.modal-warn {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-top: 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #92400e;
+    background: #fef3c7;
+    border: 1px solid rgba(217, 119, 6, 0.35);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+/* Toast — non-blocking feedback, replaces alert() */
+.admin-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-size: 13px;
+    padding: 10px 22px;
+    border-radius: 999px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+    z-index: 2000;
+    max-width: 90vw;
+    animation: adminToastUp 0.22s ease;
+}
+@keyframes adminToastUp {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Responsive — stack the sidebar above the content on narrow screens */
+@media (max-width: 768px) {
+    .wrap { flex-direction: column; height: auto; overflow: visible; }
+    .sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .sidebar-logo { width: 100%; }
+    .nav-section { display: none; }
+    .nav-item { width: auto; flex: 0 0 auto; padding: 10px 14px; }
+    .main { min-height: auto; }
+    .content { padding: 1rem; }
+    .topbar { flex-wrap: wrap; gap: 0.75rem; }
+    .topbar-actions { flex-wrap: wrap; }
 }

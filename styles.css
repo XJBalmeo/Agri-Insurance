@@ -15,6 +15,49 @@ body {
                     radial-gradient(ellipse 60% 50% at 95% 110%, rgba(15,110,86,.05) 0%, transparent 55%);
 }
 
+/* ── Design tokens ──────────────────────────────────────────────
+   Semantic variables for the custom (non-Tailwind) components. Light
+   values live in :root; the dark block below just re-points them, so the
+   components below theme themselves automatically — no per-component
+   [data-theme="dark"] override needed. (Elements styled with Tailwind
+   utility classes like bg-white still use the utility overrides further
+   down, since those colours live in the HTML, not here.) */
+:root {
+  --field-bg: #fff;
+  --field-text: #1a1a1a;
+  --field-border: #D1D5DB;
+  --field-border-hover: #9FE1CB;
+  --field-focus: #1D9E75;
+  --field-focus-ring: rgba(29,158,117,.15);
+
+  --tbl-head-bg: #F9FAFB;
+  --tbl-head-text: #6B7280;
+  --tbl-border: #D1D5DB;
+  --tbl-row-border: #F3F4F6;
+  --tbl-cell-text: #1a1a1a;
+  --tbl-cell-focus-bg: #E1F5EE;
+
+  --track-off: #D1D5DB;   /* toggle track when off */
+  --knob: #fff;           /* toggle knob */
+}
+[data-theme="dark"] {
+  --field-bg: #1F2937;
+  --field-text: #F9FAFB;
+  --field-border: #4B5563;
+  --field-border-hover: #3DBFA0;
+  /* --field-focus / --field-focus-ring stay the same brand green */
+
+  --tbl-head-bg: #374151;
+  --tbl-head-text: #D1D5DB;
+  --tbl-border: #4B5563;
+  --tbl-row-border: #374151;
+  --tbl-cell-text: #F9FAFB;
+  --tbl-cell-focus-bg: #374151;
+
+  --track-off: #4B5563;
+  --knob: #D1D5DB;
+}
+
 /* ── Step page visibility ── */
 .step-page { display: none; }
 .step-page.active { display: block; }
@@ -39,9 +82,9 @@ body {
   width: 100%;
   font-family: 'DM Sans', sans-serif;
   font-size: 13.5px;
-  color: #1a1a1a;
-  background: #fff;
-  border: 1px solid #D1D5DB;
+  color: var(--field-text);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
   border-radius: 10px;
   padding: 9px 12px;
   outline: none;
@@ -49,8 +92,8 @@ body {
   -webkit-appearance: none;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
-.field-input:hover  { border-color: #9FE1CB; }
-.field-input:focus  { border-color: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,.15); }
+.field-input:hover  { border-color: var(--field-border-hover); }
+.field-input:focus  { border-color: var(--field-focus); box-shadow: 0 0 0 3px var(--field-focus-ring); }
 .field-error        { border-color: #EF4444 !important; box-shadow: 0 0 0 3px rgba(239,68,68,.15) !important; }
 
 /* ── Select arrow ── */
@@ -63,8 +106,8 @@ body {
 
 /* ── Tag input (contact numbers) ── */
 .tag-wrap {
-  background: #fff;
-  border: 1px solid #D1D5DB;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
   border-radius: 10px;
   padding: 7px 8px;
   display: flex;
@@ -74,9 +117,10 @@ body {
   cursor: text;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
+.tag-wrap:hover { border-color: var(--field-border-hover); }
 .tag-wrap:focus-within {
-  border-color: #1D9E75;
-  box-shadow: 0 0 0 3px rgba(29,158,117,.15);
+  border-color: var(--field-focus);
+  box-shadow: 0 0 0 3px var(--field-focus-ring);
 }
 .tag {
   display: inline-flex;
@@ -108,7 +152,7 @@ body {
   background: transparent;
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  color: #1a1a1a;
+  color: var(--field-text);
   flex: 1;
   min-width: 120px;
   padding: 2px 4px;
@@ -120,7 +164,7 @@ body {
 .sw-track {
   position: absolute;
   inset: 0;
-  background: #D1D5DB;
+  background: var(--track-off);
   border-radius: 99px;
   cursor: pointer;
   transition: background 0.18s ease;
@@ -130,7 +174,7 @@ body {
   position: absolute;
   width: 16px; height: 16px;
   left: 3px; top: 3px;
-  background: #fff;
+  background: var(--knob);
   border-radius: 50%;
   transition: transform 0.18s ease;
   box-shadow: 0 1px 3px rgba(0,0,0,.12);
@@ -161,8 +205,8 @@ body {
   position: relative;
   display: inline-block;
   width: 20px; height: 20px;
-  background: #fff;
-  border: 1px solid #D1D5DB;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
   border-radius: 6px;
   transition: all 0.18s ease;
   flex-shrink: 0;
@@ -192,21 +236,21 @@ body {
   padding: 8px 10px;
   font-size: 11px;
   font-weight: 500;
-  color: #6B7280;
-  background: #F9FAFB;
-  border-top: 1px solid #D1D5DB;
-  border-bottom: 1px solid #D1D5DB;
+  color: var(--tbl-head-text);
+  background: var(--tbl-head-bg);
+  border-top: 1px solid var(--tbl-border);
+  border-bottom: 1px solid var(--tbl-border);
 }
 .cpi-tbl td {
   padding: 5px 10px;
-  border-bottom: 1px solid #F3F4F6;
-  color: #1a1a1a;
+  border-bottom: 1px solid var(--tbl-row-border);
+  color: var(--tbl-cell-text);
 }
 .cpi-tbl tbody tr:last-child td { border-bottom: none; }
 .cpi-tbl td input {
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  color: #1a1a1a;
+  color: var(--tbl-cell-text);
   background: transparent;
   border: none;
   outline: none;
@@ -215,7 +259,7 @@ body {
   border-radius: 4px;
   transition: background 0.15s;
 }
-.cpi-tbl td input:focus { background: #E1F5EE; }
+.cpi-tbl td input:focus { background: var(--tbl-cell-focus-bg); }
 .del-btn {
   background: none;
   border: none;
@@ -310,40 +354,19 @@ body {
 
 /* Tailwind class overrides for text */
 [data-theme="dark"] .text-gray-600 { color: #D1D5DB !important; }
+[data-theme="dark"] .text-gray-500 { color: #9CA3AF !important; }
 [data-theme="dark"] .text-gray-400 { color: #9CA3AF !important; }
 [data-theme="dark"] .text-gray-700 { color: #E5E7EB !important; }
 [data-theme="dark"] .text-green-800 { color: #9FE1CB !important; }
 [data-theme="dark"] .text-gray-300 { color: #4B5563 !important; }
 
-/* Custom field inputs & tag wrappers */
-[data-theme="dark"] .field-input, 
-[data-theme="dark"] .tag-wrap, 
-[data-theme="dark"] .tag-input {
-  background-color: #1F2937 !important;
-  color: #F9FAFB !important;
-  border-color: #4B5563 !important;
-}
-
-[data-theme="dark"] .field-input:hover,
-[data-theme="dark"] .tag-wrap:hover { border-color: #3DBFA0 !important; }
-[data-theme="dark"] .field-input:focus,
-[data-theme="dark"] .tag-wrap:focus-within { border-color: #1D9E75 !important; }
-
-/* CPI Tables */
-[data-theme="dark"] .cpi-tbl th { background-color: #374151 !important; border-color: #4B5563 !important; color: #D1D5DB !important; }
-[data-theme="dark"] .cpi-tbl td { border-bottom-color: #374151 !important; }
-[data-theme="dark"] .cpi-tbl td input { color: #F9FAFB !important; }
-[data-theme="dark"] .cpi-tbl td input:focus { background-color: #374151 !important; }
-
-/* Custom Checkboxes */
+/* The field inputs, tag wrapper, CPI table, checkbox box and toggle now
+   theme themselves via the design tokens above — those ~15 !important
+   overrides are no longer needed. Only these remain: the checkbox label
+   text (a non-token colour) and the IP toggle row (styled with Tailwind
+   utility classes in the HTML, so it can't read the tokens). */
 [data-theme="dark"] .custom-checkbox-label { color: #D1D5DB; }
 [data-theme="dark"] .custom-checkbox-label:hover { color: #9FE1CB; }
-[data-theme="dark"] .checkmark { background-color: #1F2937; border-color: #4B5563; }
-
-/* Toggle Switch */
-[data-theme="dark"] .sw-track { background: #4B5563; }
-[data-theme="dark"] .sw-track::before { background: #D1D5DB; }
-[data-theme="dark"] .toggle-sw input:checked + .sw-track { background: #1D9E75; }
 [data-theme="dark"] .ip-toggle-row { background: #1F2937; border-color: #374151; }
 
 /* Fix Calendar Icon visibility on dark inputs */
@@ -412,4 +435,49 @@ body {
   }
   [data-theme="dark"] .cpi-tbl tr { border-color: #374151; }
   [data-theme="dark"] .cpi-tbl td::before { color: #9CA3AF; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Batch 2 — accessibility & form UX
+══════════════════════════════════════════════════════════════ */
+
+/* ── Inline field error messages ── */
+.field-msg {
+  display: none;        /* shown by showFieldError() */
+  font-size: 11px;
+  line-height: 1.4;
+  color: #DC2626;
+  margin-top: 3px;
+}
+[data-theme="dark"] .field-msg { color: #F87171; }
+
+/* ── Perils fieldset: strip the native fieldset chrome, add an error ring ── */
+.peril-group { border: none; padding: 0; margin: 0; min-inline-size: 0; }
+.peril-group.field-error {
+  box-shadow: 0 0 0 2px rgba(239,68,68,.35);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+/* ── Step pills: future (unreachable) steps are disabled, not clickable ── */
+.step-pill:disabled { cursor: default; }
+
+/* ── Review summary list (final step) ── */
+.review-list {
+  display: grid;
+  grid-template-columns: minmax(116px, max-content) 1fr;
+  gap: 7px 16px;
+  font-size: 13px;
+}
+.review-list dt { color: #6B7280; font-weight: 500; }
+.review-list dd { color: #1a1a1a; margin: 0; word-break: break-word; }
+[data-theme="dark"] .review-list dt { color: #9CA3AF; }
+[data-theme="dark"] .review-list dd { color: #F9FAFB; }
+
+/* ── Mobile: 16px inputs prevent iOS Safari zoom-on-focus ── */
+@media (max-width: 640px) {
+  .field-input,
+  .tag-input,
+  .dap-input,
+  .cpi-tbl td input { font-size: 16px; }
 }
