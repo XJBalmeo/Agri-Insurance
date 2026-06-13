@@ -3,7 +3,7 @@
 A full-stack web application designed to digitize and streamline the application process for the Philippine Crop Insurance Corporation (PCIC). Built with a focus on data integrity, this system features a strictly normalized 3NF MySQL database, dynamic cost calculation, and transaction-safe backend routing.
 
 ## 🚀 Current Status
-**Phases 1–3 (Core Pipeline + Validation) — COMPLETE**
+**Phases 1–4 (Core Pipeline + Validation + UX Polish) — COMPLETE**
 - [x] Design 3NF MySQL relational database schema.
 - [x] Build secure Node.js/Express REST API.
 - [x] Implement SQL Transactions (Commit/Rollback) to prevent orphaned data — including cascade deletes (`DELETE /api/insurance/:id`, `DELETE /api/cpi/:id`).
@@ -19,22 +19,38 @@ A full-stack web application designed to digitize and streamline the application
 
 ### Phase 3: Bulletproof Validation (Data Integrity) — ✅ COMPLETE
 - [x] **Backend Number Validation:** Ensure numbers (like `farmArea` or `desiredAmountCover`) cannot be negative or zero on the backend. *(Also covers `plantationSize`, per-variety and CPI amounts; `soilPH` range-checked.)*
-- [x] **Contact Number Regex:** Validate that `contactNo` strictly follows the Philippine mobile format (starts with `09` and is exactly 11 digits).
+- [x] **Contact Number Regex:** Validate that `contactNo` is a valid Philippine number — mobile (starts with `09`, exactly 11 digits) or landline (10 digits starting with `0`, e.g. `0287654321`).
 - [x] **Input Sanitization:** Add backend logic to trim leading/trailing white spaces from all text inputs before saving to MySQL.
 
 > Validation logic lives in `pcic-backend/validators.js`, run before the SQL transaction in `pcic-backend/server.js`. Invalid input returns `400` with all errors collected; clean data is trimmed and saved.
 
-### Phase 4: User Experience (UX) Polish
+### Phase 4: User Experience (UX) Polish — ✅ COMPLETE
 - [x] **Prevent Double Submissions:** Submit button is disabled while the request is in flight.
 - [x] **Show Validation Details:** A rejected submission now lists every failing field in the toast, not just "Validation failed".
-- [ ] **Graceful Error Handling:** Catch database connection timeouts and display a user-friendly "System Maintenance" UI alert instead of a raw error object.
-- [ ] **Currency Formatting:** Dynamically format large integer inputs (e.g., `300000`) into readable currency strings (e.g., `₱300,000.00`) on the frontend.
-- [ ] **Second Variety Inputs:** `varietyBlock2` in `index.html` is missing `treesNum2`/`avgYield2` fields, so a second variety currently fails backend validation (yield defaults to 0).
+- [x] **Graceful Error Handling:** Backend answers `503` quickly when MySQL is unreachable; the form shows a persistent "System under maintenance" banner (and the admin a retry row) on timeouts/5xx instead of a raw error. Validation errors (400) keep their detailed toast.
+- [x] **Currency Formatting:** Peso fields (`desiredCover`, CPI costs) format to `₱300,000.00`-style on blur and un-format on focus; submission strips the formatting before sending numbers to the backend.
+- [x] **Second Variety Inputs:** `varietyBlock2` now includes `treesNum2`/`avgYield2`, wired into validation and the submission payload.
 
 ### Phase 5: Admin & Presentation Prep
 - [x] **Admin Dashboard:** `/admin.html` browses every table via `GET /api/tables/:name` and deletes policies/CPI blocks through transactional cascade routes.
-- [ ] **Status Tracking:** Add an `ApplicationStatus` column (Pending, Approved, Rejected) to the database and allow the admin to update it.
-- [ ] **Authentication:** The API (including admin delete routes) is currently unauthenticated — required before any real deployment.
+- [x] **Status Tracking:** `InsuranceTable.ApplicationStatus` ENUM (Pending/Approved/Rejected, defaults to Pending); admin updates it via an inline dropdown that calls `PATCH /api/insurance/:id/status`. Existing DBs: run `pcic-backend/migrations/2026-06-12-add-application-status.sql`.
+- [x] **Authentication:** Admin login (`POST /api/login`, password from `ADMIN_PASSWORD` in `.env`) issues an 8-hour in-memory session token; all admin routes (table reads, deletes, status updates, cost) require `Authorization: Bearer <token>` via middleware in `pcic-backend/auth.js`. The public submission route stays open. *Local-grade auth — a real deployment still needs HTTPS, hashed multi-user credentials, and persistent sessions.*
+
+### Phase 6: Returning Farmers — ✅ COMPLETE
+- [x] **One Active Policy per Farmer:** submission is rejected while the farmer (matched by exact name + birthday) has a policy whose coverage hasn't ended — except applications the admin marked `Rejected`, which never block re-applying. A returning farmer's proposer row is reused, never duplicated; a same-name farmer with a different birthday is a new person.
+- [x] **Early Active-Policy Warning:** once name and birthday are entered on step 1, `POST /api/proposer/active-policy` warns immediately about an active policy instead of failing after all six steps. The endpoint returns only the policy ID and end date — no personal data.
+
+## 🗂️ Data Dictionary Alignment
+
+The MySQL schema (`pcic-backend/schema.sql`) follows the project **Data Dictionary**: every `VARCHAR`/`CHAR` size matches, allowable values are enforced (`CivilStatus ∈ {S,M,W,SE}`, `Sex ∈ {M,F}`), and the numeric *size* column is read as total digits (`float 10 → DECIMAL(10,2)`, `float 5 → DECIMAL(5,2)`, `integer 5 → max 99999`). These limits are enforced in three places — the form (`maxlength`/`max`), the API (`pcic-backend/validators.js`), and the database — so a value can never reach a column it doesn't fit.
+
+**Intentional deviations from the Data Dictionary** (kept on purpose, documented for the defense):
+- `CPIID` / `MaterialID` / `LaborID` are `INT AUTO_INCREMENT` (dictionary: varchar) so the backend can read `result.insertId`; `VarietyTable` gains a `VarietyID` primary key the dictionary lacks, enabling single-row deletes.
+- Money/area columns use `DECIMAL` (dictionary: float) to avoid floating-point rounding on peso amounts.
+- `Birthday`, `CivilStatus`, and `Sex` are `NOT NULL` (dictionary leaves them blank) — `Birthday` is half the proposer identity key, and the form requires all three.
+- `ApplicationStatus` (ENUM) is a post-dictionary status-tracking feature.
+
+Existing databases: run `pcic-backend/migrations/2026-06-13-align-to-data-dictionary.sql` to resize columns in place (see the file header — shrinking fails on rows that already exceed the new size).
 
 ## 🛠️ Tech Stack
 * **Frontend:** HTML5, JavaScript (Vanilla), Tailwind CSS
@@ -55,5 +71,6 @@ A full-stack web application designed to digitize and streamline the application
    DB_USER=root
    DB_PASSWORD=your_password
    DB_NAME=pcic_insurance
+   ADMIN_PASSWORD=your_admin_dashboard_password
    ```
 5. Start the backend server with `node server.js` (runs on port 3000).

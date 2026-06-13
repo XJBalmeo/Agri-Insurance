@@ -11,7 +11,10 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    // Fail fast when MySQL is unreachable (default is 10s) so the API can
+    // answer with a clean 503 before the frontend's 10s request timeout fires.
+    connectTimeout: 5000
 });
 
 module.exports = pool;
