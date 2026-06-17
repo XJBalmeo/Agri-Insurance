@@ -91,8 +91,10 @@
             label: 'CPI Labor Table', 
             meta: 'CPILaborTable', 
             cols: [
-            { n: 'LaborID', t: 'INT' },              
-            { n: 'CPIID', t: 'INT' },   
+            { n: 'LaborID', t: 'INT' },
+            { n: 'CPIID', t: 'INT' },
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },
+            { n: 'ProposerName', t: 'VARCHAR(30)' },
             { n: 'LaborWorkforce', t: 'VARCHAR(30)' },
             { n: 'LaborQuantity', t: 'INT' },
             { n: 'LaborCost', t: 'DECIMAL(10,2)' }
@@ -103,9 +105,11 @@
             label: 'CPI Material Table', 
             meta: 'CPIMaterialTable',
             cols: [
-            { n: 'MaterialID', t: 'INT' },             
-            { n: 'CPIID', t: 'INT' },     
-            { n: 'MaterialItem', t: 'VARCHAR(30)' },   
+            { n: 'MaterialID', t: 'INT' },
+            { n: 'CPIID', t: 'INT' },
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },
+            { n: 'ProposerName', t: 'VARCHAR(30)' },
+            { n: 'MaterialItem', t: 'VARCHAR(30)' },
             { n: 'MaterialQuantity', t: 'INT' },
             { n: 'MaterialCost', t: 'DECIMAL(10,2)' }
             ], 
@@ -116,7 +120,8 @@
             cols: [
             { n: 'CPIID', t: 'INT' },
             { n: 'InsuranceID', t: 'VARCHAR(10)' },
-            { n: 'DaysNoAfterPlanting', t: 'INT' }, 
+            { n: 'ProposerName', t: 'VARCHAR(30)' },
+            { n: 'DaysNoAfterPlanting', t: 'INT' },
             ], 
             rows: [] 
         },farm: { 
@@ -139,9 +144,10 @@
             label: 'Insurance Policies', 
             meta: 'InsuranceTable',
             cols: [
-            { n: 'InsuranceID', t: 'VARCHAR(10)' },    
-            { n: 'ProposerID', t: 'VARCHAR(10)' },    
-            { n: 'Beneficiary', t: 'VARCHAR(30)' },    
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },
+            { n: 'ProposerID', t: 'VARCHAR(10)' },
+            { n: 'ProposerName', t: 'VARCHAR(30)' },
+            { n: 'Beneficiary', t: 'VARCHAR(30)' },
             { n: 'Crops', t: 'VARCHAR(20)' },          
             { n: 'PlantationSize', t: 'DECIMAL(5,2)' },
             { n: 'CoverageStart', t: 'DATE' },         
@@ -151,7 +157,8 @@
             { n: 'Drought', t: 'TINYINT(1)' },
             { n: 'Pests', t: 'TINYINT(1)' },
             { n: 'DesiredAmountCover', t: 'DECIMAL(10,2)' },
-            { n: 'PlantationID', t: 'VARCHAR(10)' },   
+            { n: 'PlantationID', t: 'VARCHAR(10)' },
+            { n: 'PlantationName', t: 'VARCHAR(20)' },
             { n: 'SupervisingPT', t: 'VARCHAR(30)' },
             { n: 'PTDate', t: 'DATE' },
             { n: 'ProposerDate', t: 'DATE' },
@@ -183,6 +190,7 @@
             meta: 'VarietyTable',
             cols: [
             { n: 'InsuranceID', t: 'VARCHAR(10)' },
+            { n: 'ProposerName', t: 'VARCHAR(30)' },
             { n: 'Variety', t: 'VARCHAR(20)' },
             { n: 'AreaPlanted', t: 'DECIMAL(5,2)' },
             { n: 'DatePlanting', t: 'DATE' },

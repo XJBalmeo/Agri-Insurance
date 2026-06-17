@@ -387,8 +387,46 @@ app.get('/api/tables/:tableName', requireAuth, async (req, res) => {
     const targetTable = tableMap[tableName];
     if (!targetTable) return res.status(400).send("Table mapping missing");
 
+    // Child tables only store their parent's foreign-key ID, which on its own
+    // tells an admin very little (CPIID 5 means nothing to a human). For those
+    // we JOIN up the chain to also return readable parent names. Tables with no
+    // parent (proposer, farm) aren't listed here and fall back to SELECT *.
+    // Each query keeps `<table>.*`, so every original column — including dates,
+    // which db.js returns as 'YYYY-MM-DD' strings via dateStrings — is unchanged,
+    // and the row's primary key is still present for the delete route to use.
+    const queryMap = {
+        insurance: `
+            SELECT i.*, p.ProposerName, f.PlantationName
+            FROM InsuranceTable i
+            JOIN ProposerTable p ON i.ProposerID = p.ProposerID
+            JOIN FarmTable f     ON i.PlantationID = f.PlantationID`,
+        variety: `
+            SELECT v.*, p.ProposerName
+            FROM VarietyTable v
+            JOIN InsuranceTable i ON v.InsuranceID = i.InsuranceID
+            JOIN ProposerTable p  ON i.ProposerID = p.ProposerID`,
+        cpi: `
+            SELECT c.*, p.ProposerName
+            FROM CPITable c
+            JOIN InsuranceTable i ON c.InsuranceID = i.InsuranceID
+            JOIN ProposerTable p  ON i.ProposerID = p.ProposerID`,
+        cpimaterial: `
+            SELECT m.*, c.InsuranceID, p.ProposerName
+            FROM CPIMaterialTable m
+            JOIN CPITable c       ON m.CPIID = c.CPIID
+            JOIN InsuranceTable i ON c.InsuranceID = i.InsuranceID
+            JOIN ProposerTable p  ON i.ProposerID = p.ProposerID`,
+        cpilabor: `
+            SELECT l.*, c.InsuranceID, p.ProposerName
+            FROM CPILaborTable l
+            JOIN CPITable c       ON l.CPIID = c.CPIID
+            JOIN InsuranceTable i ON c.InsuranceID = i.InsuranceID
+            JOIN ProposerTable p  ON i.ProposerID = p.ProposerID`
+    };
+
     try {
-        const [rows] = await db.query(`SELECT * FROM ${targetTable}`);
+        const sql = queryMap[tableName] || `SELECT * FROM ${targetTable}`;
+        const [rows] = await db.query(sql);
         console.log(`Successfully fetched ${rows.length} rows from ${targetTable}`);
         res.json(rows);
     } catch (error) {
