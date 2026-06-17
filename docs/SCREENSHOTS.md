@@ -134,6 +134,15 @@ A theme toggle in the header switches the whole app between light and dark. The 
 
 ![Dark mode](screenshots/feature-dark-mode.png)
 
+### Admin table search
+A search box in the admin topbar filters the current table across all columns as you type. The filter **persists when you switch tables**, so the same term applies to whichever table you open next. Booleans show as Yes/No, and searching matches that displayed text.
+
+![Table search filtering rows](screenshots/feature-table-search.png)
+
+When nothing matches, the table keeps its headers and shows a clear "No rows match" message instead of going blank.
+
+![Search with no results](screenshots/feature-search-no-results.png)
+
 ### Responsive / mobile layout
 The form and landing page reflow for narrow screens — fields stack, the step pills wrap, and the header compresses.
 
