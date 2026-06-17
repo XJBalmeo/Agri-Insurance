@@ -292,7 +292,9 @@
         
         const deleteBtn = document.querySelector('button[onclick="openDelete()"]');
     
-        if (name === 'cpi' || name === 'insurance') {
+        // Delete is allowed for every table EXCEPT variety: VarietyTable has no
+        // per-row key, so a single variety can only be removed via its policy.
+        if (name !== 'variety') {
             deleteBtn.disabled = false;
             deleteBtn.style.opacity = '1';
             deleteBtn.style.cursor = 'pointer';
@@ -424,6 +426,14 @@
             idName = "CPIID";
         } else if (cur === 'insurance') {
             idName = "InsuranceID";
+        } else if (cur === 'proposer') {
+            idName = "ProposerID";
+        } else if (cur === 'farm') {
+            idName = "PlantationID";
+        } else if (cur === 'cpilabor') {
+            idName = "LaborID";
+        } else if (cur === 'cpimaterial') {
+            idName = "MaterialID";
         }
 
         // Update the UI elements
@@ -456,6 +466,10 @@
                 endpoint = `${API_BASE}/insurance/${idValue}`;
             } else if (cur === 'cpi') {
                 endpoint = `${API_BASE}/cpi/${idValue}`;
+            } else if (cur === 'proposer') {
+                endpoint = `${API_BASE}/proposer/${idValue}`;
+            } else if (cur === 'farm') {
+                endpoint = `${API_BASE}/farm/${idValue}`;
             } else {
                 endpoint = `${API_BASE}/tables/${cur}/${idValue}`;
             }

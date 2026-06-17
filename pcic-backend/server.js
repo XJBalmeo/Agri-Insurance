@@ -558,6 +558,138 @@ app.delete('/api/insurance/:id', requireAuth, async (req, res) => {
 });
 
 // ======================================================
+// 🗑️ CASCADE DELETE: A PROPOSER (and everything beneath them)
+// A proposer can hold several policies; each policy drags along its
+// varieties + CPI blocks + CPI labor/materials. We delete from the
+// bottom of the tree up so no foreign key is ever left dangling, all
+// inside one transaction so a failure halfway through rolls back.
+// ======================================================
+app.delete('/api/proposer/:id', requireAuth, async (req, res) => {
+    const proposerId = req.params.id;
+    let connection;
+
+    try {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Great-grandchildren: labor + materials, reached via CPI -> Insurance.
+        await connection.execute(`
+            DELETE l FROM CPILaborTable l
+            JOIN CPITable c ON l.CPIID = c.CPIID
+            JOIN InsuranceTable i ON c.InsuranceID = i.InsuranceID
+            WHERE i.ProposerID = ?
+        `, [proposerId]);
+        await connection.execute(`
+            DELETE m FROM CPIMaterialTable m
+            JOIN CPITable c ON m.CPIID = c.CPIID
+            JOIN InsuranceTable i ON c.InsuranceID = i.InsuranceID
+            WHERE i.ProposerID = ?
+        `, [proposerId]);
+
+        // Grandchildren: CPI blocks and varieties of every policy.
+        await connection.execute(`
+            DELETE c FROM CPITable c
+            JOIN InsuranceTable i ON c.InsuranceID = i.InsuranceID
+            WHERE i.ProposerID = ?
+        `, [proposerId]);
+        await connection.execute(`
+            DELETE v FROM VarietyTable v
+            JOIN InsuranceTable i ON v.InsuranceID = i.InsuranceID
+            WHERE i.ProposerID = ?
+        `, [proposerId]);
+
+        // Children: the policies themselves.
+        await connection.execute(`DELETE FROM InsuranceTable WHERE ProposerID = ?`, [proposerId]);
+
+        // Finally the proposer. affectedRows here tells us whether the ID existed.
+        const [result] = await connection.execute(
+            `DELETE FROM ProposerTable WHERE ProposerID = ?`, [proposerId]
+        );
+        if (result.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: "Proposer not found" });
+        }
+
+        await connection.commit();
+        res.json({ message: `Successfully deleted ${proposerId} and all related records.` });
+    } catch (error) {
+        if (connection) {
+            try { await connection.rollback(); } catch (_) { /* connection gone */ }
+        }
+        console.error("Proposer Cascade Delete Error:", error);
+        if (isDbUnavailable(error)) {
+            return res.status(503).json({ message: 'Database temporarily unavailable. Please try again later.' });
+        }
+        res.status(500).json({ message: "Database error" });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// ======================================================
+// 🗑️ CASCADE DELETE: A FARM (plantation) and everything beneath it
+// Same shape as the proposer cascade, but the policies are linked by
+// PlantationID instead of ProposerID.
+// ======================================================
+app.delete('/api/farm/:id', requireAuth, async (req, res) => {
+    const plantationId = req.params.id;
+    let connection;
+
+    try {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        await connection.execute(`
+            DELETE l FROM CPILaborTable l
+            JOIN CPITable c ON l.CPIID = c.CPIID
+            JOIN InsuranceTable i ON c.InsuranceID = i.InsuranceID
+            WHERE i.PlantationID = ?
+        `, [plantationId]);
+        await connection.execute(`
+            DELETE m FROM CPIMaterialTable m
+            JOIN CPITable c ON m.CPIID = c.CPIID
+            JOIN InsuranceTable i ON c.InsuranceID = i.InsuranceID
+            WHERE i.PlantationID = ?
+        `, [plantationId]);
+
+        await connection.execute(`
+            DELETE c FROM CPITable c
+            JOIN InsuranceTable i ON c.InsuranceID = i.InsuranceID
+            WHERE i.PlantationID = ?
+        `, [plantationId]);
+        await connection.execute(`
+            DELETE v FROM VarietyTable v
+            JOIN InsuranceTable i ON v.InsuranceID = i.InsuranceID
+            WHERE i.PlantationID = ?
+        `, [plantationId]);
+
+        await connection.execute(`DELETE FROM InsuranceTable WHERE PlantationID = ?`, [plantationId]);
+
+        const [result] = await connection.execute(
+            `DELETE FROM FarmTable WHERE PlantationID = ?`, [plantationId]
+        );
+        if (result.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: "Farm not found" });
+        }
+
+        await connection.commit();
+        res.json({ message: `Successfully deleted ${plantationId} and all related records.` });
+    } catch (error) {
+        if (connection) {
+            try { await connection.rollback(); } catch (_) { /* connection gone */ }
+        }
+        console.error("Farm Cascade Delete Error:", error);
+        if (isDbUnavailable(error)) {
+            return res.status(503).json({ message: 'Database temporarily unavailable. Please try again later.' });
+        }
+        res.status(500).json({ message: "Database error" });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// ======================================================
 // UPDATE APPLICATION STATUS (admin)
 // ======================================================
 // A single-row UPDATE needs no transaction — transactions exist to keep
