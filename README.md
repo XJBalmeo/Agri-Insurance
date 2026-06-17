@@ -2,6 +2,8 @@
 
 A full-stack web application designed to digitize and streamline the application process for the Philippine Crop Insurance Corporation (PCIC). Built with a focus on data integrity, this system features a strictly normalized 3NF MySQL database, dynamic cost calculation, and transaction-safe backend routing.
 
+> 📸 **See it in action:** [`docs/SCREENSHOTS.md`](docs/SCREENSHOTS.md) — a visual tour of the screens, the UI state indicators (active-policy warning, validation errors, maintenance banner, application status), and key features.
+
 ## 🚀 Current Status
 **Phases 1–4 (Core Pipeline + Validation + UX Polish) — COMPLETE**
 - [x] Design 3NF MySQL relational database schema.
