@@ -50,6 +50,16 @@ function isPositiveWithinMax(value, max) {
     return Number.isFinite(n) && n > 0 && n <= max;
 }
 
+// Like isPositiveWithinMax, but allows zero. Used for "days after planting",
+// where 0 legitimately means "on the planting day itself." A blank/missing
+// value is rejected outright — Number('') is 0, so we must guard it before
+// coercion, otherwise an empty field would masquerade as a valid day 0.
+function isNonNegativeWithinMax(value, max) {
+    if (value === '' || value === null || value === undefined) return false;
+    const n = Number(value);
+    return Number.isFinite(n) && n >= 0 && n <= max;
+}
+
 // Max VARCHAR/CHAR lengths, mirroring the Data Dictionary and schema.sql.
 const MAX_LENGTHS = {
     proposerName: 30, address: 100, contactNo: 15, secondaryContactNo: 15,
@@ -267,8 +277,8 @@ function validateApplicationData(data) {
     if (Array.isArray(data.cpiSchedule)) {
         data.cpiSchedule.forEach((day, i) => {
             const label = `CPI block #${i + 1}`;
-            if (!isPositiveWithinMax(day.daysAfterPlanting, MAX_VALUES.daysAfterPlanting)) {
-                errors.push(`${label}: days after planting must be greater than zero and at most ${MAX_VALUES.daysAfterPlanting}.`);
+            if (!isNonNegativeWithinMax(day.daysAfterPlanting, MAX_VALUES.daysAfterPlanting)) {
+                errors.push(`${label}: days after planting must be zero or greater and at most ${MAX_VALUES.daysAfterPlanting}.`);
             }
             if (Array.isArray(day.materials)) {
                 day.materials.forEach((mat, j) => {

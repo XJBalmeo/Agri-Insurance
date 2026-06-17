@@ -131,6 +131,32 @@ describe('validateApplicationData', () => {
         );
     });
 
+    test('accepts zero days after planting (an input applied on planting day)', () => {
+        const data = validPayload();
+        data.cpiSchedule[0].daysAfterPlanting = 0;
+        assert.deepStrictEqual(validateApplicationData(data), []);
+    });
+
+    test('still rejects negative days after planting', () => {
+        const data = validPayload();
+        data.cpiSchedule[0].daysAfterPlanting = -1;
+        assert.ok(
+            validateApplicationData(data).some(
+                (e) => e.includes('CPI block #1') && e.includes('days after planting'),
+            ),
+        );
+    });
+
+    test('rejects a blank days after planting (missing is not day 0)', () => {
+        const data = validPayload();
+        data.cpiSchedule[0].daysAfterPlanting = '';
+        assert.ok(
+            validateApplicationData(data).some(
+                (e) => e.includes('CPI block #1') && e.includes('days after planting'),
+            ),
+        );
+    });
+
     test('rejects a missing perils object (guards the server-side TypeError)', () => {
         const data = validPayload();
         delete data.perils;

@@ -155,11 +155,14 @@ function validateStep(step) {
   // Step 4 — CPI Blocks (Must have DAP & No Duplicates)
   if (step === 4) {
     const dapInputs = [...document.querySelectorAll('.dap-input')];
-    const dapValues = dapInputs.map(i => i.value.trim()).filter(v => v !== '');
+    const dapValues = dapInputs.map(i => i.value.trim());
 
-    if (dapValues.length === 0) {
-      dapInputs.forEach(i => i.classList.add('field-error'));
-      showToast('Add at least one schedule with a Days-After-Planting value.');
+    // Every schedule must carry a Days-After-Planting value. A blank field is
+    // "missing", not day 0 — flag each empty one so it can't slip through as 0.
+    const emptyInputs = dapInputs.filter(i => i.value.trim() === '');
+    if (emptyInputs.length > 0) {
+      emptyInputs.forEach(i => i.classList.add('field-error'));
+      showToast('Every schedule needs a Days-After-Planting value (use 0 for planting day).');
       valid = false;
     } else {
       // Check for duplicate days using a Set
@@ -335,8 +338,11 @@ function collectFormData() {
       });
       return rows;
     };
+    // Keep a blank distinct from 0: send '' so the backend rejects a missing
+    // value instead of silently treating it as "planting day" (0).
+    const dapRaw = block.querySelector('.dap-input').value.trim();
     cpiSchedule.push({
-      daysAfterPlanting: parseInt(block.querySelector('.dap-input').value) || 0,
+      daysAfterPlanting: dapRaw === '' ? '' : parseInt(dapRaw, 10),
       materials: readRows('.mat-body', 'item'),
       labor: readRows('.lab-body', 'workforce'),
     });
