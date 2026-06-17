@@ -7,7 +7,7 @@
 
 const { test, describe } = require('node:test');
 const assert = require('node:assert');
-const { sanitizeApplicationData, validateApplicationData, isValidStatus, VALID_STATUSES } = require('./validators');
+const { sanitizeApplicationData, validateApplicationData, isValidStatus, VALID_STATUSES, validateRowUpdate, computeAgeGroup } = require('./validators');
 
 // A minimal payload that passes every validation rule. Individual tests clone
 // this and break one field at a time, so we know any error comes from that field.
@@ -298,14 +298,14 @@ describe('sanitizeApplicationData', () => {
 
     test('trims nested variety and CPI text fields', () => {
         const data = {
-            varieties: [{ varietyName: '  Cavendish  ', ageGroup: ' 1-2yrs ' }],
+            varieties: [{ varietyName: '  Cavendish  ', ageGroup: ' 2.25 ' }],
             cpiSchedule: [
                 { materials: [{ item: '  Fertilizer ' }], labor: [{ workforce: ' Planters  ' }] },
             ],
         };
         sanitizeApplicationData(data);
         assert.strictEqual(data.varieties[0].varietyName, 'Cavendish');
-        assert.strictEqual(data.varieties[0].ageGroup, '1-2yrs');
+        assert.strictEqual(data.varieties[0].ageGroup, '2.25');
         assert.strictEqual(data.cpiSchedule[0].materials[0].item, 'Fertilizer');
         assert.strictEqual(data.cpiSchedule[0].labor[0].workforce, 'Planters');
     });
@@ -340,5 +340,172 @@ describe('isValidStatus', () => {
 
     test('rejects values outside the allowed set', () => {
         assert.strictEqual(isValidStatus('Cancelled'), false);
+    });
+});
+
+describe('validateRowUpdate', () => {
+    // Minimal bodies that pass for each table; tests clone and break one field.
+    function validLaborEdit() {
+        return { LaborWorkforce: 'Planters', LaborQuantity: '5', LaborCost: '300.50' };
+    }
+    function validFarmEdit() {
+        return {
+            PlantationName: 'Sunrise Farm', FarmAddress: 'Davao City', FarmArea: '2.5',
+            SoilType: 'Clay Loam', SoilPH: '6.5', Topography: 'Flat', IrrigationType: 'Drip',
+        };
+    }
+    function validInsuranceEdit() {
+        return {
+            Beneficiary: 'Maria dela Cruz', Crops: 'Banana', PlantationSize: '2.5',
+            CoverageStart: '2026-07-01', CoverageEnd: '2026-12-31',
+            Flood: '1', Typhoon: '0', Drought: '0', Pests: '0',
+            DesiredAmountCover: '300000', SupervisingPT: 'Engr. Santos',
+            PTDate: '2026-06-13', ProposerDate: '', ApplicationStatus: 'Pending',
+        };
+    }
+
+    test('rejects a table with no editable schema (unknown table name)', () => {
+        const { errors } = validateRowUpdate('bogus', { foo: 'X' });
+        assert.deepStrictEqual(errors, ['This table cannot be edited.']);
+    });
+
+    function validVarietyEdit() {
+        return {
+            Variety: '  Cavendish  ', AreaPlanted: '1.5',
+            DatePlanting: '2026-01-01', EstHarvestDate: '2026-06-01',
+            AgeGroup: '99.99', NumTrees: '100', AvgYield: '50',
+        };
+    }
+
+    test('accepts a valid variety edit, deriving AgeGroup and overriding the submitted value', () => {
+        // The fixture submits AgeGroup '99.99', but the backend ignores it and
+        // recomputes the value from the dates: 2026-01-01 -> 2026-06-01 = 0.42.
+        const { errors, values } = validateRowUpdate('variety', validVarietyEdit());
+        assert.deepStrictEqual(errors, []);
+        assert.deepStrictEqual(values, {
+            Variety: 'Cavendish', AreaPlanted: 1.5,
+            DatePlanting: '2026-01-01', EstHarvestDate: '2026-06-01',
+            AgeGroup: '0.42', NumTrees: 100, AvgYield: 50,
+        });
+    });
+
+    test('rejects a variety edit whose harvest date is not after planting', () => {
+        const bad = { ...validVarietyEdit(), DatePlanting: '2026-06-01', EstHarvestDate: '2026-06-01' };
+        const { errors } = validateRowUpdate('variety', bad);
+        assert.ok(errors.some((e) => e.includes('harvest date must be after the planting date')));
+    });
+
+    test('rejects a missing or non-object body', () => {
+        assert.deepStrictEqual(validateRowUpdate('cpilabor', null).errors, [
+            'Request body is missing or malformed.',
+        ]);
+    });
+
+    test('accepts a valid labor edit and coerces strings to numbers', () => {
+        const { errors, values } = validateRowUpdate('cpilabor', validLaborEdit());
+        assert.deepStrictEqual(errors, []);
+        // Numbers come off an HTML form as strings; the validator returns them
+        // as real numbers ready to bind into the UPDATE.
+        assert.deepStrictEqual(values, {
+            LaborWorkforce: 'Planters', LaborQuantity: 5, LaborCost: 300.5,
+        });
+    });
+
+    test('collects every failing field at once', () => {
+        const { errors } = validateRowUpdate('cpilabor', {
+            LaborWorkforce: '   ', LaborQuantity: '0', LaborCost: '-5',
+        });
+        assert.ok(errors.some((e) => e.includes('LaborWorkforce is required')));
+        assert.ok(errors.some((e) => e.includes('LaborQuantity must be greater than zero')));
+        assert.ok(errors.some((e) => e.includes('LaborCost must be greater than zero')));
+    });
+
+    test('rejects text longer than the column size', () => {
+        const data = validLaborEdit();
+        data.LaborWorkforce = 'X'.repeat(31); // LaborWorkforce is VARCHAR(30)
+        assert.ok(validateRowUpdate('cpilabor', data).errors.some((e) => e.includes('at most 30')));
+    });
+
+    test('rejects a non-numeric / blank number field', () => {
+        const data = validLaborEdit();
+        data.LaborQuantity = '';
+        assert.ok(validateRowUpdate('cpilabor', data).errors.some((e) => e.includes('LaborQuantity')));
+    });
+
+    test('rejects a non-whole value for an integer column', () => {
+        const data = validLaborEdit();
+        data.LaborQuantity = '2.5'; // LaborQuantity is INT
+        assert.ok(validateRowUpdate('cpilabor', data).errors.some((e) => e.includes('whole number')));
+    });
+
+    test('accepts a valid farm edit', () => {
+        assert.deepStrictEqual(validateRowUpdate('farm', validFarmEdit()).errors, []);
+    });
+
+    test('enforces the soil pH range (0.1 - 14.9)', () => {
+        const low = validFarmEdit();
+        low.SoilPH = '0';
+        assert.ok(validateRowUpdate('farm', low).errors.some((e) => e.includes('SoilPH')));
+
+        const high = validFarmEdit();
+        high.SoilPH = '15';
+        assert.ok(validateRowUpdate('farm', high).errors.some((e) => e.includes('SoilPH')));
+    });
+
+    test('accepts a valid insurance edit and normalizes booleans to 1/0', () => {
+        const { errors, values } = validateRowUpdate('insurance', validInsuranceEdit());
+        assert.deepStrictEqual(errors, []);
+        assert.strictEqual(values.Flood, 1);
+        assert.strictEqual(values.Typhoon, 0);
+        // An empty optional date becomes NULL rather than an error.
+        assert.strictEqual(values.ProposerDate, null);
+    });
+
+    test('rejects a boolean that is neither truthy nor falsy', () => {
+        const data = validInsuranceEdit();
+        data.Flood = 'maybe';
+        assert.ok(validateRowUpdate('insurance', data).errors.some((e) => e.includes('Flood must be Yes or No')));
+    });
+
+    test('rejects an ApplicationStatus outside the allowed set', () => {
+        const data = validInsuranceEdit();
+        data.ApplicationStatus = 'Cancelled';
+        assert.ok(validateRowUpdate('insurance', data).errors.some((e) => e.includes('ApplicationStatus')));
+    });
+
+    test('rejects coverage end that is not after coverage start', () => {
+        const data = validInsuranceEdit();
+        data.CoverageEnd = data.CoverageStart; // equal — not strictly after
+        assert.ok(validateRowUpdate('insurance', data).errors.some((e) => e.includes('Coverage end date')));
+    });
+
+    test('accepts zero days after planting for a CPI block', () => {
+        assert.deepStrictEqual(validateRowUpdate('cpi', { DaysNoAfterPlanting: '0' }).errors, []);
+    });
+
+    test('rejects negative days after planting', () => {
+        assert.ok(validateRowUpdate('cpi', { DaysNoAfterPlanting: '-1' }).errors.some((e) => e.includes('zero or greater')));
+    });
+});
+
+describe('computeAgeGroup', () => {
+    test('computes years + months/12 to two decimals, using the harvest date', () => {
+        assert.strictEqual(computeAgeGroup('2026-01-01', '2026-06-01'), '0.42'); // 5 months
+        assert.strictEqual(computeAgeGroup('2024-01-01', '2026-07-01'), '2.50'); // 2y 6m
+        assert.strictEqual(computeAgeGroup('2026-01-01', '2027-01-01'), '1.00'); // exactly 1y
+    });
+
+    test('subtracts a month when the day-of-month has not been reached', () => {
+        // Jan 15 -> Jun 10: not yet a full 5th month, so 4 months = 0.33.
+        assert.strictEqual(computeAgeGroup('2026-01-15', '2026-06-10'), '0.33');
+    });
+
+    test('returns 0.00 when planting falls after the target date', () => {
+        assert.strictEqual(computeAgeGroup('2026-06-01', '2026-01-01'), '0.00');
+    });
+
+    test('returns null when the planting date is missing or invalid', () => {
+        assert.strictEqual(computeAgeGroup('', '2026-06-01'), null);
+        assert.strictEqual(computeAgeGroup('not-a-date', '2026-06-01'), null);
     });
 });

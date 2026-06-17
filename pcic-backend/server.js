@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const db = require('./db');
-const { sanitizeApplicationData, validateApplicationData, isValidStatus, VALID_STATUSES } = require('./validators');
+const { sanitizeApplicationData, validateApplicationData, isValidStatus, VALID_STATUSES, ROW_SCHEMAS, validateRowUpdate, computeAgeGroup } = require('./validators');
 const { verifyPassword, createSession, requireAuth } = require('./auth');
 // .env (DB credentials + ADMIN_PASSWORD) is loaded by ./db via dotenv.
 
@@ -196,8 +196,9 @@ app.post('/api/submit-insurance', async (req, res) => {
                     (InsuranceID, Variety, AreaPlanted, DatePlanting, EstHarvestDate, AgeGroup, NumTrees, AvgYield) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
-                    insuranceId, v.varietyName, v.areaPlanted, v.datePlanting, 
-                    v.estHarvestDate, v.ageGroup || null, v.numTrees || 0, v.avgYield || 0
+                    insuranceId, v.varietyName, v.areaPlanted, v.datePlanting,
+                    v.estHarvestDate, computeAgeGroup(v.datePlanting, v.estHarvestDate),
+                    v.numTrees || 0, v.avgYield || 0
                 ]);
             }
         }
@@ -435,6 +436,33 @@ app.get('/api/tables/:tableName', requireAuth, async (req, res) => {
             return res.status(503).json({ error: 'Database temporarily unavailable. Please try again later.' });
         }
         res.status(500).json({ error: 'Failed to fetch table data.' });
+    }
+});
+
+// ======================================================
+// 🗑️ DELETE ONE VARIETY ROW (admin)
+// ======================================================
+// VarietyTable has no single-column key, so a row is addressed by the
+// (InsuranceID, Variety) pair — now UNIQUE, so this matches exactly one row.
+// Both values arrive URL-encoded as path segments; this route is declared
+// before the generic ':tableName/:id' route so Express matches it first.
+app.delete('/api/tables/variety/:insuranceId/:variety', requireAuth, async (req, res) => {
+    const { insuranceId, variety } = req.params;
+    try {
+        const [result] = await db.execute(
+            `DELETE FROM VarietyTable WHERE InsuranceID = ? AND Variety = ?`,
+            [insuranceId, variety]
+        );
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Variety not found" });
+        }
+        res.json({ message: `Deleted variety “${variety}” from ${insuranceId}.` });
+    } catch (error) {
+        console.error("Variety Delete Error:", error);
+        if (isDbUnavailable(error)) {
+            return res.status(503).json({ message: 'Database temporarily unavailable. Please try again later.' });
+        }
+        res.status(500).json({ message: "Database error" });
     }
 });
 
@@ -755,6 +783,116 @@ app.patch('/api/insurance/:id/status', requireAuth, async (req, res) => {
         res.json({ message: `${insuranceId} is now ${status}.` });
     } catch (error) {
         console.error('Status Update Error:', error);
+        if (isDbUnavailable(error)) {
+            return res.status(503).json({ message: 'Database temporarily unavailable. Please try again later.' });
+        }
+        res.status(500).json({ message: 'Database error' });
+    }
+});
+
+// ======================================================
+// ✏️ EDIT ONE VARIETY ROW (admin)
+// ======================================================
+// Variety's twin of the single-id PUT below. The row is found by the
+// (InsuranceID, Variety) pair from the URL — the OLD variety name — while the
+// body carries the new column values (validated against ROW_SCHEMAS.variety).
+// Renaming a variety to one that already exists on the policy trips the UNIQUE
+// key, which we translate into a friendly 409 instead of a generic 500.
+// Declared before the generic ':tableName/:id' PUT so Express matches it first.
+app.put('/api/tables/variety/:insuranceId/:variety', requireAuth, async (req, res) => {
+    const { insuranceId, variety } = req.params;
+
+    const { errors, values } = validateRowUpdate('variety', req.body);
+    if (errors.length > 0) {
+        return res.status(400).json({ error: 'Validation failed', details: errors });
+    }
+
+    const columns = Object.keys(values);
+    const setClause = columns.map((col) => `${col} = ?`).join(', ');
+    // Bind the SET values first, then the two WHERE keys (old name) last.
+    const params = [...columns.map((col) => values[col]), insuranceId, variety];
+
+    try {
+        const [result] = await db.query(
+            `UPDATE VarietyTable SET ${setClause} WHERE InsuranceID = ? AND Variety = ?`,
+            params
+        );
+
+        // affectedRows counts rows *changed*, so a no-op save returns 0 even
+        // though the row exists — tell a missing row (404) apart from an
+        // unchanged one (success).
+        if (result.affectedRows === 0) {
+            const [exists] = await db.query(
+                `SELECT 1 FROM VarietyTable WHERE InsuranceID = ? AND Variety = ? LIMIT 1`,
+                [insuranceId, variety]
+            );
+            if (exists.length === 0) {
+                return res.status(404).json({ message: 'Variety not found' });
+            }
+        }
+
+        res.json({ message: `Updated variety on ${insuranceId}.` });
+    } catch (error) {
+        // A rename colliding with an existing variety on the same policy.
+        if (error && error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ message: 'That policy already has a variety with this name.' });
+        }
+        console.error('Variety Update Error:', error);
+        if (isDbUnavailable(error)) {
+            return res.status(503).json({ message: 'Database temporarily unavailable. Please try again later.' });
+        }
+        res.status(500).json({ message: 'Database error' });
+    }
+});
+
+// ======================================================
+// ✏️ EDIT (UPDATE) A SINGLE ROW (admin)
+// ======================================================
+// Generalizes the status PATCH above to any editable column. Like that route,
+// a single-row UPDATE needs no transaction — one statement is atomic on its own.
+// The set of columns comes entirely from ROW_SCHEMAS (server-controlled keys),
+// never from the request, so the column NAMES can't be tampered with; the VALUES
+// are bound as parameters. The primary key is used only in WHERE, never SET.
+app.put('/api/tables/:tableName/:id', requireAuth, async (req, res) => {
+    const { tableName } = req.params;
+    const idValue = req.params.id;
+
+    const schema = ROW_SCHEMAS[tableName];
+    if (!schema) return res.status(400).json({ message: 'This table cannot be edited.' });
+
+    const { errors, values } = validateRowUpdate(tableName, req.body);
+    if (errors.length > 0) {
+        return res.status(400).json({ error: 'Validation failed', details: errors });
+    }
+
+    // Build "col1 = ?, col2 = ?, …" from the validated column names, then bind
+    // each value in the same order, with the id last for the WHERE clause.
+    const columns = Object.keys(values);
+    const setClause = columns.map((col) => `${col} = ?`).join(', ');
+    const params = [...columns.map((col) => values[col]), idValue];
+
+    try {
+        const [result] = await db.query(
+            `UPDATE ${schema.table} SET ${setClause} WHERE ${schema.idColumn} = ?`,
+            params
+        );
+
+        // For an UPDATE, MySQL's affectedRows counts rows *changed*, so a save
+        // with no actual edits returns 0 even though the row exists. Tell the
+        // two cases apart: a missing row is a 404, an unchanged row is a success.
+        if (result.affectedRows === 0) {
+            const [exists] = await db.query(
+                `SELECT 1 FROM ${schema.table} WHERE ${schema.idColumn} = ? LIMIT 1`,
+                [idValue]
+            );
+            if (exists.length === 0) {
+                return res.status(404).json({ message: 'Record not found' });
+            }
+        }
+
+        res.json({ message: `Successfully updated ${idValue} in ${schema.table}.` });
+    } catch (error) {
+        console.error('Update Error:', error);
         if (isDbUnavailable(error)) {
             return res.status(503).json({ message: 'Database temporarily unavailable. Please try again later.' });
         }

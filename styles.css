@@ -369,10 +369,14 @@ body {
 [data-theme="dark"] .custom-checkbox-label:hover { color: #9FE1CB; }
 [data-theme="dark"] .ip-toggle-row { background: #1F2937; border-color: #374151; }
 
-/* Fix Calendar Icon visibility on dark inputs */
-[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.8);
-}
+/* Make the native date-picker popup follow the app theme.
+   color-scheme is the ONLY hook the browser gives us for the calendar
+   dropdown's colors — it controls the popup background, the day numbers,
+   and how disabled (out-of-min/max) days are greyed. Light popup in light
+   mode, dark popup in dark mode. It also re-tints the calendar icon, so we
+   no longer need the invert() hack that was here before. */
+input[type="date"] { color-scheme: light; }
+[data-theme="dark"] input[type="date"] { color-scheme: dark; }
 
 /* Fix Select Dropdown Arrow visibility */
 [data-theme="dark"] .field-select {
