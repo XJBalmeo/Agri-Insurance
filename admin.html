@@ -2,6 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Tells phones to render at their real (device) width instead of a
+         fake ~980px desktop width — without this the responsive CSS below
+         never kicks in and the page just shrinks to fit. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PCIC Admin Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css">
@@ -26,6 +30,22 @@
         <button class="nav-item" onclick="switchTable('insurance')" id="nav-insurance"><i class="ti ti-shield"></i> Insurance</button>
         <button class="nav-item" onclick="switchTable('proposer')" id="nav-proposer"><i class="ti ti-user"></i> Proposer</button>
         <button class="nav-item" onclick="switchTable('variety')" id="nav-variety"><i class="ti ti-seeding"></i> Variety</button>
+
+        <!-- Mobile-only table picker. The buttons above are hidden on narrow
+             screens (see admin.css) and this compact dropdown takes their
+             place. Its option values match the names passed to switchTable,
+             and switchTable keeps this <select> in sync when a table changes
+             through any other path. -->
+        <select class="nav-select" id="nav-select" aria-label="Choose a table"
+                onchange="switchTable(this.value)">
+            <option value="cpilabor">CPI Labor</option>
+            <option value="cpimaterial">CPI Material</option>
+            <option value="cpi">CPI</option>
+            <option value="farm">Farm</option>
+            <option value="insurance">Insurance</option>
+            <option value="proposer">Proposer</option>
+            <option value="variety">Variety</option>
+        </select>
     </aside>
 
     <main class="main">
@@ -305,6 +325,11 @@
         
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         document.getElementById('nav-' + name).classList.add('active');
+
+        // Mirror the choice into the mobile dropdown so it never drifts out of
+        // sync (e.g. when a table is switched programmatically rather than by
+        // the user opening the dropdown).
+        document.getElementById('nav-select').value = name;
         
         document.getElementById('ttl').textContent = T().label;
         document.getElementById('meta').textContent = T().meta;

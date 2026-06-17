@@ -83,6 +83,10 @@ body {
   color: #fff;
 }
 
+/* Mobile-only table picker — hidden on desktop, where the nav buttons
+   above are used instead (see the responsive block at the bottom). */
+.nav-select { display: none; }
+
 /* Main Content */
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
@@ -299,16 +303,33 @@ td { padding: 12px; border-bottom: 1px solid var(--border-color); }
     to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* Responsive — stack the sidebar above the content on narrow screens */
+/* Responsive — stack the sidebar above the content on narrow screens.
+   Wide tables keep the desktop behaviour: they scroll sideways inside
+   .table-wrap (which has overflow-x: auto) rather than reflowing. */
 @media (max-width: 768px) {
     .wrap { flex-direction: column; height: auto; overflow: visible; }
-    .sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .sidebar { width: 100%; flex-direction: column; align-items: stretch; }
     .sidebar-logo { width: 100%; }
     .nav-section { display: none; }
-    .nav-item { width: auto; flex: 0 0 auto; padding: 10px 14px; }
+    /* Swap the 7 stacked buttons for a single compact dropdown so the nav
+       takes one row instead of filling the top third of the screen. */
+    .nav-item { display: none; }
+    .nav-select {
+        display: block;
+        margin: 0.75rem 1.25rem 1rem;
+        padding: 10px 12px;
+        font: inherit;
+        font-size: 14px;
+        color: var(--text-primary);
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+    }
     .main { min-height: auto; }
     .content { padding: 1rem; }
     .topbar { flex-wrap: wrap; gap: 0.75rem; }
     .topbar-actions { flex-wrap: wrap; }
+    .topbar-actions .btn { flex: 1; justify-content: center; }
     .topbar-search { flex-basis: 100%; max-width: none; margin: 0; }
 }
