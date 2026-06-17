@@ -1,0 +1,28 @@
+{
+  "name": "agri-insurance",
+  "version": "1.0.0",
+  "description": "Agri-Insurance is a database-driven solution that is created for insurance firms to help manage their insurance services for farmers and plantations. The system is designed to collect, manage, store, and process various types of data related to farmers, farmer activities, crop production, and insurance details.",
+  "main": "script.js",
+  "scripts": {
+    "start": "node pcic-backend/server.js",
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XJBalmeo/Agri-Insurance.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/XJBalmeo/Agri-Insurance/issues"
+  },
+  "homepage": "https://github.com/XJBalmeo/Agri-Insurance#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mysql2": "^3.22.4"
+  }
+}

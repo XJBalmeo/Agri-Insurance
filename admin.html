@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Tells phones to render at their real (device) width instead of a
+         fake ~980px desktop width — without this the responsive CSS below
+         never kicks in and the page just shrinks to fit. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PCIC Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="wrap">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon"><i class="ti ti-plant"></i></div>
+            <div>
+                <div class="logo-text">PCIC Admin</div>
+                <div class="logo-sub">Philippine Crop Insurance</div>
+            </div>
+        </div>
+        <div class="nav-section">Database Tables</div>
+        <button class="nav-item active" onclick="switchTable('cpilabor')" id="nav-cpilabor"><i class="ti ti-briefcase"></i> CPI Labor</button>
+        <button class="nav-item" onclick="switchTable('cpimaterial')" id="nav-cpimaterial"><i class="ti ti-package"></i> CPI Material</button>
+        <button class="nav-item" onclick="switchTable('cpi')" id="nav-cpi"><i class="ti ti-file-text"></i> CPI</button>
+        <button class="nav-item" onclick="switchTable('farm')" id="nav-farm"><i class="ti ti-plant"></i> Farm</button>
+        <button class="nav-item" onclick="switchTable('insurance')" id="nav-insurance"><i class="ti ti-shield"></i> Insurance</button>
+        <button class="nav-item" onclick="switchTable('proposer')" id="nav-proposer"><i class="ti ti-user"></i> Proposer</button>
+        <button class="nav-item" onclick="switchTable('variety')" id="nav-variety"><i class="ti ti-seeding"></i> Variety</button>
+
+        <!-- Mobile-only table picker. The buttons above are hidden on narrow
+             screens (see admin.css) and this compact dropdown takes their
+             place. Its option values match the names passed to switchTable,
+             and switchTable keeps this <select> in sync when a table changes
+             through any other path. -->
+        <select class="nav-select" id="nav-select" aria-label="Choose a table"
+                onchange="switchTable(this.value)">
+            <option value="cpilabor">CPI Labor</option>
+            <option value="cpimaterial">CPI Material</option>
+            <option value="cpi">CPI</option>
+            <option value="farm">Farm</option>
+            <option value="insurance">Insurance</option>
+            <option value="proposer">Proposer</option>
+            <option value="variety">Variety</option>
+        </select>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <div>
+                <h1 class="modal-ttl" id="ttl">CPI Labor Table</h1>
+                <p class="topbar-meta" id="meta">cpilabortable</p>
+            </div>
+            <div class="topbar-search">
+                <i class="ti ti-search search-icon" aria-hidden="true"></i>
+                <input type="text" id="search-input" class="search-input"
+                       placeholder="Search this table…" aria-label="Search the current table"
+                       oninput="handleSearch(this.value)" />
+                <button type="button" id="search-clear" class="search-clear" aria-label="Clear search"
+                        onclick="clearSearch()" style="display:none;"><i class="ti ti-x"></i></button>
+            </div>
+            <div class="topbar-actions">
+                <button class="btn btn-danger" onclick="openDelete()"><i class="ti ti-trash"></i>Delete Row</button>
+                <button class="btn btn-ghost" onclick="logout()"><i class="ti ti-logout"></i>Log Out</button>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="table-wrap">
+                <table>
+                    <thead id="thead"></thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+            <div id="pgn" style="margin-top: 1rem;"></div>
+        </div>
+    </main>
+
+    <!-- Login overlay: covers the dashboard until a session token exists.
+         The data behind it is only fetched after login, so hiding the UI
+         is cosmetic — the real protection is the 401 from the API. -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-box">
+            <div class="logo-icon" style="margin: 0 auto 12px;"><i class="ti ti-lock"></i></div>
+            <p class="modal-ttl" style="text-align:center;">Admin Login</p>
+            <p id="login-msg" class="login-msg"></p>
+            <input type="password" id="login-password" placeholder="Admin password" class="field-input"
+                   onkeydown="if (event.key === 'Enter') submitLogin()" />
+            <button class="btn btn-primary login-btn" onclick="submitLogin()">Sign In</button>
+        </div>
+    </div>
+
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-box">
+            <p class="modal-ttl">Delete Row</p>
+            <hr class="modal-hr">
+            <label class="modal-label" for="deleteId">LaborID of row to be deleted</label>
+            <input type="text" id="deleteId" placeholder="Enter ID" class="field-input" required />
+            <p class="modal-warn">
+                <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+                <span>This also deletes all related rows in other tables. This can't be undone.</span>
+            </p>
+            <div class="modal-btn">
+                <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="deleteSubmit()">Delete row</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:3000/api';
+
+    const TABLES = {
+        cpilabor: { 
+            label: 'CPI Labor Table', 
+            meta: 'CPILaborTable', 
+            cols: [
+            { n: 'LaborID', t: 'INT' },
+            { n: 'CPIID', t: 'INT' },
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },
+            { n: 'ProposerName', t: 'VARCHAR(30)' },
+            { n: 'LaborWorkforce', t: 'VARCHAR(30)' },
+            { n: 'LaborQuantity', t: 'INT' },
+            { n: 'LaborCost', t: 'DECIMAL(10,2)' }
+            ], 
+            rows: [] 
+        },
+        cpimaterial: { 
+            label: 'CPI Material Table', 
+            meta: 'CPIMaterialTable',
+            cols: [
+            { n: 'MaterialID', t: 'INT' },
+            { n: 'CPIID', t: 'INT' },
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },
+            { n: 'ProposerName', t: 'VARCHAR(30)' },
+            { n: 'MaterialItem', t: 'VARCHAR(30)' },
+            { n: 'MaterialQuantity', t: 'INT' },
+            { n: 'MaterialCost', t: 'DECIMAL(10,2)' }
+            ], 
+            rows: [] 
+        },cpi: { 
+            label: 'CPI Table', 
+            meta: 'CPITable',
+            cols: [
+            { n: 'CPIID', t: 'INT' },
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },
+            { n: 'ProposerName', t: 'VARCHAR(30)' },
+            { n: 'DaysNoAfterPlanting', t: 'INT' },
+            ], 
+            rows: [] 
+        },farm: { 
+            label: 'Farm Information', 
+            meta: 'FarmTable',
+            cols: [
+            { n: 'PlantationID', t: 'VARCHAR(10)' },   
+            { n: 'PlantationName', t: 'VARCHAR(20)' }, 
+            { n: 'FarmAddress', t: 'VARCHAR(100)' },   
+            { n: 'FarmArea', t: 'DECIMAL(5,2)' },
+            { n: 'SoilType', t: 'VARCHAR(20)' },
+            { n: 'SoilPH', t: 'DECIMAL(3,1)' },
+            { n: 'Topography', t: 'VARCHAR(20)' },
+            { n: 'IrrigationType', t: 'VARCHAR(20)' }
+            ], 
+            rows: [] 
+        },
+        
+        insurance: { 
+            label: 'Insurance Policies', 
+            meta: 'InsuranceTable',
+            cols: [
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },
+            { n: 'ProposerID', t: 'VARCHAR(10)' },
+            { n: 'ProposerName', t: 'VARCHAR(30)' },
+            { n: 'Beneficiary', t: 'VARCHAR(30)' },
+            { n: 'Crops', t: 'VARCHAR(20)' },          
+            { n: 'PlantationSize', t: 'DECIMAL(5,2)' },
+            { n: 'CoverageStart', t: 'DATE' },         
+            { n: 'CoverageEnd', t: 'DATE' },           
+            { n: 'Flood', t: 'TINYINT(1)' },          
+            { n: 'Typhoon', t: 'TINYINT(1)' },
+            { n: 'Drought', t: 'TINYINT(1)' },
+            { n: 'Pests', t: 'TINYINT(1)' },
+            { n: 'DesiredAmountCover', t: 'DECIMAL(10,2)' },
+            { n: 'PlantationID', t: 'VARCHAR(10)' },
+            { n: 'PlantationName', t: 'VARCHAR(20)' },
+            { n: 'SupervisingPT', t: 'VARCHAR(30)' },
+            { n: 'PTDate', t: 'DATE' },
+            { n: 'ProposerDate', t: 'DATE' },
+            { n: 'ApplicationStatus', t: 'ENUM' }
+            ],
+            rows: [] 
+        },
+        proposer: { 
+            label: 'Proposer Information', 
+            meta: 'ProposerTable',
+            cols: [
+            { n: 'ProposerID', t: 'VARCHAR(10)' },
+            { n: 'ProposerName', t: 'VARCHAR(30)' },
+            { n: 'Address', t: 'VARCHAR(100)' },     
+            { n: 'Birthday', t: 'DATE' },
+            { n: 'ContactNo', t: 'VARCHAR(15)' },     
+            { n: 'SecondaryContactNo', t: 'VARCHAR(15)' },
+            { n: 'CivilStatus', t: 'CHAR(2)' },
+            { n: 'Sex', t: 'CHAR(1)' },
+            { n: 'IP', t: 'TINYINT(1)' },            
+            { n: 'Tribe', t: 'VARCHAR(20)' },
+            { n: 'Spouse', t: 'VARCHAR(30)' },
+            { n: 'SpouseBirthday', t: 'DATE' }
+            ], 
+            rows: [] 
+        },
+        variety: { 
+            label: 'Crop Varieties', 
+            meta: 'VarietyTable',
+            cols: [
+            { n: 'InsuranceID', t: 'VARCHAR(10)' },
+            { n: 'ProposerName', t: 'VARCHAR(30)' },
+            { n: 'Variety', t: 'VARCHAR(20)' },
+            { n: 'AreaPlanted', t: 'DECIMAL(5,2)' },
+            { n: 'DatePlanting', t: 'DATE' },
+            { n: 'EstHarvestDate', t: 'DATE' },
+            { n: 'AgeGroup', t: 'VARCHAR(10)' },
+            { n: 'NumTrees', t: 'INT' },
+            { n: 'AvgYield', t: 'DECIMAL(5,1)' }
+            ],
+            rows: [] 
+        }
+    };
+
+    let cur = 'cpilabor', selIdx = null;
+    // The active search term. It deliberately persists across table switches,
+    // so a filter you type stays applied as you move between tables.
+    let searchTerm = '';
+    const T = () => TABLES[cur];
+
+    /* ── Auth ───────────────────────────────────────────────────
+       The token from POST /api/login lives in sessionStorage: it
+       survives a reload but dies with the tab. Every admin request
+       carries it as a Bearer header; any 401 (expired token, or the
+       server restarted and lost its in-memory sessions) sends the
+       admin back to the login overlay. */
+
+    function authHeaders() {
+        return { 'Authorization': 'Bearer ' + (sessionStorage.getItem('adminToken') || '') };
+    }
+
+    function showLogin(message) {
+        sessionStorage.removeItem('adminToken');
+        document.getElementById('login-msg').textContent = message || '';
+        document.getElementById('login-overlay').style.display = 'flex';
+        document.getElementById('login-password').focus();
+    }
+
+    // Returns true (and shows the login overlay) if the response was a 401.
+    function handleUnauthorized(response) {
+        if (response.status !== 401) return false;
+        showLogin('Session expired — please sign in again.');
+        return true;
+    }
+
+    async function submitLogin() {
+        const input = document.getElementById('login-password');
+        const msg = document.getElementById('login-msg');
+        try {
+            const response = await fetch(`${API_BASE}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: input.value }),
+                signal: AbortSignal.timeout(10000)
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                msg.textContent = result.message || 'Login failed';
+                return;
+            }
+            sessionStorage.setItem('adminToken', result.token);
+            input.value = '';
+            msg.textContent = '';
+            document.getElementById('login-overlay').style.display = 'none';
+            fetchTableData();
+        } catch (error) {
+            console.error('Login error:', error);
+            msg.textContent = 'Cannot reach the server.';
+        }
+    }
+
+    function logout() {
+        // Client-side only: drop the token and show the overlay. The
+        // server-side session simply expires on its own.
+        showLogin('');
+    }
+
+    async function fetchTableData() {
+        try {
+            const response = await fetch('http://localhost:3000/api/tables/' + cur, {
+                headers: authHeaders(),
+                signal: AbortSignal.timeout(10000)   // give up after 10 seconds
+            });
+
+            if (handleUnauthorized(response)) return;
+            if (!response.ok) throw new Error('Table fetch failed');
+
+            const data = await response.json();
+            T().rows = data;
+            render();
+        } catch (error) {
+            // Backend down, database down, or request timed out — show a
+            // friendly maintenance row instead of a raw error dump.
+            console.error("Connection Error:", error);
+            document.getElementById('tbody').innerHTML =
+                `<tr><td colspan="${T().cols.length}" style="padding:2rem; text-align:center; color:#92400E;">
+                    <strong>System under maintenance</strong> — we can't reach the database right now.<br>
+                    <button class="btn btn-primary" style="margin-top:0.75rem;" onclick="fetchTableData()">Retry</button>
+                </td></tr>`;
+        }
+    }
+
+    function switchTable(name) {
+        cur = name;
+        selIdx = null;
+        
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.getElementById('nav-' + name).classList.add('active');
+
+        // Mirror the choice into the mobile dropdown so it never drifts out of
+        // sync (e.g. when a table is switched programmatically rather than by
+        // the user opening the dropdown).
+        document.getElementById('nav-select').value = name;
+        
+        document.getElementById('ttl').textContent = T().label;
+        document.getElementById('meta').textContent = T().meta;
+        
+        const deleteBtn = document.querySelector('button[onclick="openDelete()"]');
+    
+        // Delete is allowed for every table EXCEPT variety: VarietyTable has no
+        // per-row key, so a single variety can only be removed via its policy.
+        if (name !== 'variety') {
+            deleteBtn.disabled = false;
+            deleteBtn.style.opacity = '1';
+            deleteBtn.style.cursor = 'pointer';
+        } else {
+            deleteBtn.disabled = true;
+            deleteBtn.style.opacity = '0.5';    // Make it look greyed out
+            deleteBtn.style.cursor = 'not-allowed'; // Change mouse cursor
+        }
+
+        fetchTableData();
+    }
+
+    /* ── Search ─────────────────────────────────────────────────
+       Pure client-side filtering: the rows are already in memory
+       (T().rows), so we just narrow them down before drawing. The
+       term is stored lowercased once and reused on every render. */
+
+    function handleSearch(value) {
+        searchTerm = value.trim().toLowerCase();
+        document.getElementById('search-clear').style.display = searchTerm ? 'flex' : 'none';
+        render();
+    }
+
+    function clearSearch() {
+        const input = document.getElementById('search-input');
+        input.value = '';
+        handleSearch('');
+        input.focus();
+    }
+
+    // Rows whose columns contain the search term in ANY cell. With no
+    // term, every row passes. Matching is done on the same trimmed date
+    // string the table shows, so what you see is what you search.
+    function filteredRows() {
+        if (!searchTerm) return T().rows;
+        return T().rows.filter(row =>
+            T().cols.some(col => {
+                let val = row[col.n];
+                if (val === null || val === undefined) return false;
+                if (col.t === 'DATE') val = String(val).split('T')[0];
+                // Match the displayed Yes/No, not the raw 1/0, so "yes" works.
+                if (col.t === 'TINYINT(1)') val = Number(val) === 1 ? 'Yes' : 'No';
+                return String(val).toLowerCase().includes(searchTerm);
+            })
+        );
+    }
+
+    function render() {
+        let h = '<tr>';
+        T().cols.forEach(c => h += `<th>${c.n}</th>`);
+        h += '</tr>';
+        document.getElementById('thead').innerHTML = h;
+
+        const tbody = document.getElementById('tbody');
+        tbody.innerHTML = '';
+
+        if (T().rows.length === 0) {
+            tbody.innerHTML =
+                `<tr><td colspan="${T().cols.length}">No records found in ${T().meta}.</td></tr>`;
+            return;
+        }
+
+        const rows = filteredRows();
+
+        // The table has data, but the active filter excludes all of it.
+        // Left-aligned (like the "No records found" row) so it stays visible
+        // on wide, horizontally-scrolling tables instead of being centred
+        // across columns that sit off-screen.
+        if (rows.length === 0) {
+            const cell = document.createElement('td');
+            cell.colSpan = T().cols.length;
+            cell.style.color = 'var(--text-secondary)';
+            // textContent keeps the user's term from being treated as markup.
+            cell.textContent = `No rows match “${searchTerm}” in ${T().meta}.`;
+            const tr = document.createElement('tr');
+            tr.appendChild(cell);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        rows.forEach((row) => {
+            const tr = document.createElement('tr');
+            T().cols.forEach(col => {
+                let val = row[col.n];
+
+                if (col.t === 'DATE' && val) val = val.split('T')[0];
+
+                // Booleans (TINYINT(1)) read as Yes/No instead of 1/0.
+                if (col.t === 'TINYINT(1)' && val !== null && val !== undefined) {
+                    val = Number(val) === 1 ? 'Yes' : 'No';
+                }
+
+                const td = document.createElement('td');
+
+                // Insurance status is editable in place: render a dropdown
+                // instead of plain text. Options are hardcoded and the value
+                // is set via the DOM property, so DB content still can't
+                // inject any markup.
+                if (cur === 'insurance' && col.n === 'ApplicationStatus') {
+                    td.appendChild(buildStatusSelect(row.InsuranceID, val));
+                    tr.appendChild(td);
+                    return;
+                }
+
+                // textContent renders DB values as plain text, so HTML/scripts
+                // submitted through the public form can never execute here.
+                td.textContent = (val !== null && val !== undefined) ? val : '—';
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+    }
+
+    const STATUSES = ['Pending', 'Approved', 'Rejected'];
+
+    function buildStatusSelect(insuranceId, current) {
+        const sel = document.createElement('select');
+        sel.className = 'status-select';
+        STATUSES.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = s;
+            sel.appendChild(opt);
+        });
+        // Rows created before the migration could be null — show as Pending.
+        sel.value = STATUSES.includes(current) ? current : 'Pending';
+        sel.onchange = () => updateStatus(insuranceId, sel);
+        return sel;
+    }
+
+    async function updateStatus(insuranceId, sel) {
+        // Remember what to roll the dropdown back to if the save fails.
+        const previous = T().rows.find(r => r.InsuranceID === insuranceId)?.ApplicationStatus || 'Pending';
+
+        try {
+            const response = await fetch(`${API_BASE}/insurance/${insuranceId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify({ status: sel.value }),
+                signal: AbortSignal.timeout(10000)
+            });
+            if (handleUnauthorized(response)) {
+                sel.value = previous;   // nothing was saved
+                return;
+            }
+            const result = await response.json().catch(() => ({}));
+
+            if (!response.ok) throw new Error(result.message || (result.details || []).join(' ') || 'Update failed');
+
+            // Keep the cached row in sync so a later revert uses the new value.
+            const row = T().rows.find(r => r.InsuranceID === insuranceId);
+            if (row) row.ApplicationStatus = sel.value;
+
+            // Brief green flash so the admin sees the save landed.
+            sel.style.outline = '2px solid #16a34a';
+            setTimeout(() => { sel.style.outline = ''; }, 900);
+        } catch (error) {
+            console.error('Status update failed:', error);
+            sel.value = previous;   // roll the UI back — nothing was saved
+            showToast('Could not update status: ' + error.message, 'error');
+        }
+    }
+
+    /* Non-blocking toast — replaces alert() for feedback. */
+    function showToast(msg, type = 'success') {
+        document.getElementById('admin-toast')?.remove();
+        const t = document.createElement('div');
+        t.id = 'admin-toast';
+        t.className = 'admin-toast';
+        t.setAttribute('role', 'status');
+        t.style.background = type === 'error' ? '#b91c1c' : 'var(--pcic-green)';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 3200);
+    }
+
+    function openDelete() {
+        const modal = document.getElementById('modal-overlay');
+        const label = modal.querySelector('label');
+        const input = document.getElementById('deleteId');
+        const title = modal.querySelector('.modal-ttl');
+
+        let idName = "ID";
+
+        // Logic for specific tables
+        if (cur === 'cpi') {
+            idName = "CPIID";
+        } else if (cur === 'insurance') {
+            idName = "InsuranceID";
+        } else if (cur === 'proposer') {
+            idName = "ProposerID";
+        } else if (cur === 'farm') {
+            idName = "PlantationID";
+        } else if (cur === 'cpilabor') {
+            idName = "LaborID";
+        } else if (cur === 'cpimaterial') {
+            idName = "MaterialID";
+        }
+
+        // Update the UI elements
+        title.textContent = `Delete from ${T().label}`;
+        label.textContent = `${idName} of row to be deleted`;
+        input.placeholder = `Enter ${idName}`;
+        input.value = ""; // Clear previous input
+
+        modal.style.display = 'flex';   // flex centres the box (see .modal-overlay)
+        input.focus();
+    }
+
+    function closeModal() {
+        document.getElementById('modal-overlay').style.display = 'none';
+    }
+
+    async function deleteSubmit() {
+        const idValue = document.getElementById('deleteId').value.trim();
+        // The modal already shows the cascade warning, so it acts as the
+        // confirmation step — no extra blocking confirm() needed.
+        if (!idValue) { showToast('Please enter an ID.', 'error'); return; }
+
+        try {
+            // The cascade now lives in the backend, inside a single transaction,
+            // so the browser makes exactly one request per delete. Insurance and
+            // CPI use dedicated cascade routes; anything else hits the generic
+            // single-row route.
+            let endpoint;
+            if (cur === 'insurance') {
+                endpoint = `${API_BASE}/insurance/${idValue}`;
+            } else if (cur === 'cpi') {
+                endpoint = `${API_BASE}/cpi/${idValue}`;
+            } else if (cur === 'proposer') {
+                endpoint = `${API_BASE}/proposer/${idValue}`;
+            } else if (cur === 'farm') {
+                endpoint = `${API_BASE}/farm/${idValue}`;
+            } else {
+                endpoint = `${API_BASE}/tables/${cur}/${idValue}`;
+            }
+
+            const response = await fetch(endpoint, { method: 'DELETE', headers: authHeaders() });
+            if (handleUnauthorized(response)) return closeModal();
+            const result = await response.json();
+
+            if (response.ok) {
+                showToast(result.message, 'success');
+                closeModal();
+                fetchTableData();
+            } else {
+                showToast('Error: ' + result.message, 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Server is not responding.', 'error');
+        }
+    }
+
+    window.onload = () => {
+        if (sessionStorage.getItem('adminToken')) {
+            document.getElementById('login-overlay').style.display = 'none';
+            fetchTableData();   // a stale token just lands back here via 401
+        } else {
+            showLogin('');
+        }
+    };
+</script>
+</body>
+</html>

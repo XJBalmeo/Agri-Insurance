@@ -1,0 +1,335 @@
+:root {
+  /* Brand green unified with the public app (was #1d6e4a / #165a3d) */
+  --pcic-green: #0F6E56;
+  --pcic-green-hover: #085041;
+  --pcic-accent: #E1F5EE;
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --border-color: #e2e8f0;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { 
+  background-color: var(--bg-main); 
+  font-family: 'DM Sans', sans-serif; 
+  color: var(--text-primary);
+}
+
+.wrap {
+  display: flex;
+  height: 100vh; 
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: var(--pcic-green);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.logo-text { font-size: 14px; font-weight: 600; color: #fff; }
+.logo-sub { font-size: 10px; color: rgba(255, 255, 255, 0.6); }
+
+.nav-section {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 1.5rem 1.25rem 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 1.25rem;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: 0.2s;
+}
+
+.nav-item:hover, .nav-item.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Mobile-only table picker — hidden on desktop, where the nav buttons
+   above are used instead (see the responsive block at the bottom). */
+.nav-select { display: none; }
+
+/* Main Content */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Topbar search — filters the active table, persists across switches */
+.topbar-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 360px;
+  margin: 0 1.5rem;
+}
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-secondary);
+  font-size: 16px;
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  padding: 9px 36px 9px 36px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search-input:focus {
+  border-color: var(--pcic-green);
+  box-shadow: 0 0 0 3px var(--pcic-accent);
+  background: #fff;
+}
+.search-clear {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+}
+.search-clear:hover { background: #cbd5e0; color: var(--text-primary); }
+
+.content { padding: 2rem; overflow-y: auto; }
+
+.table-wrap {
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin-top: 1rem;
+  overflow-x: auto;   /* wide tables (e.g. Insurance, 17 cols) scroll instead of clipping */
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 12px; background: #f1f5f9; color: var(--text-secondary); }
+td { padding: 12px; border-bottom: 1px solid var(--border-color); }
+
+/* Buttons */
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary { background: var(--pcic-green); color: #fff; }
+.btn-primary:hover { background: var(--pcic-green-hover); }
+.btn-ghost { background: #fff; border-color: var(--border-color); color: var(--text-secondary); }
+.btn-ghost:hover { background: var(--bg-main); border-color: #cbd5e0; }
+.btn-danger { background: #dc2626; color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+
+
+.modal-box {
+  background: #fff;
+  width: 500px;
+  max-width: 90%;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.modal-ttl { font-size: 18px; font-weight: 600; }
+
+.field-input{
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.modal-btn {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 5%;
+}
+
+/* Login overlay — sits above everything until a session exists */
+.login-overlay {
+    display: none; /* shown via JS */
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.75);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 32px;
+    width: 320px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.login-msg {
+    color: #b91c1c;
+    font-size: 13px;
+    text-align: center;
+    min-height: 16px;
+    margin: 0;
+}
+
+.login-btn { justify-content: center; }
+
+/* Inline status dropdown in the Insurance table */
+.status-select {
+    padding: 4px 8px;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* Delete modal — centred overlay (mirrors the login overlay pattern) */
+.modal-overlay {
+    display: none;            /* shown as flex via JS */
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    z-index: 998;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+.modal-hr { border: none; border-top: 1px solid var(--border-color); margin: 12px 0 16px; }
+.modal-label { font-size: 13px; color: var(--text-secondary); }
+.modal-box .field-input { margin-top: 8px; }
+.modal-warn {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-top: 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #92400e;
+    background: #fef3c7;
+    border: 1px solid rgba(217, 119, 6, 0.35);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+/* Toast — non-blocking feedback, replaces alert() */
+.admin-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-size: 13px;
+    padding: 10px 22px;
+    border-radius: 999px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+    z-index: 2000;
+    max-width: 90vw;
+    animation: adminToastUp 0.22s ease;
+}
+@keyframes adminToastUp {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Responsive — stack the sidebar above the content on narrow screens.
+   Wide tables keep the desktop behaviour: they scroll sideways inside
+   .table-wrap (which has overflow-x: auto) rather than reflowing. */
+@media (max-width: 768px) {
+    .wrap { flex-direction: column; height: auto; overflow: visible; }
+    .sidebar { width: 100%; flex-direction: column; align-items: stretch; }
+    .sidebar-logo { width: 100%; }
+    .nav-section { display: none; }
+    /* Swap the 7 stacked buttons for a single compact dropdown so the nav
+       takes one row instead of filling the top third of the screen. */
+    .nav-item { display: none; }
+    .nav-select {
+        display: block;
+        margin: 0.75rem 1.25rem 1rem;
+        padding: 10px 12px;
+        font: inherit;
+        font-size: 14px;
+        color: var(--text-primary);
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    .main { min-height: auto; }
+    .content { padding: 1rem; }
+    .topbar { flex-wrap: wrap; gap: 0.75rem; }
+    .topbar-actions { flex-wrap: wrap; }
+    .topbar-actions .btn { flex: 1; justify-content: center; }
+    .topbar-search { flex-basis: 100%; max-width: none; margin: 0; }
+}
