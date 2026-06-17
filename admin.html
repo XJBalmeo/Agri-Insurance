@@ -63,6 +63,7 @@
                         onclick="clearSearch()" style="display:none;"><i class="ti ti-x"></i></button>
             </div>
             <div class="topbar-actions">
+                <button class="btn btn-primary" onclick="openEdit()"><i class="ti ti-edit"></i>Edit Row</button>
                 <button class="btn btn-danger" onclick="openDelete()"><i class="ti ti-trash"></i>Delete Row</button>
                 <button class="btn btn-ghost" onclick="logout()"><i class="ti ti-logout"></i>Log Out</button>
             </div>
@@ -99,6 +100,12 @@
             <hr class="modal-hr">
             <label class="modal-label" for="deleteId">LaborID of row to be deleted</label>
             <input type="text" id="deleteId" placeholder="Enter ID" class="field-input" required />
+            <!-- Second key field, shown only for variety (no single-column key):
+                 #deleteId holds the InsuranceID, this holds the Variety name. -->
+            <div id="deleteVarietyWrap" style="display:none; margin-top:12px;">
+                <label class="modal-label" for="deleteVariety">Variety of row to be deleted</label>
+                <input type="text" id="deleteVariety" placeholder="Enter Variety" class="field-input" />
+            </div>
             <p class="modal-warn">
                 <i class="ti ti-alert-triangle" aria-hidden="true"></i>
                 <span>This also deletes all related rows in other tables. This can't be undone.</span>
@@ -106,6 +113,43 @@
             <div class="modal-btn">
                 <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
                 <button class="btn btn-danger" onclick="deleteSubmit()">Delete row</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit modal: two steps in one box. Step 1 asks which row (by its ID);
+         step 2 reveals a form of that row's editable fields, pre-filled from
+         the data already held in memory, and saves changes to the database. -->
+    <div id="edit-overlay" class="modal-overlay">
+        <div class="modal-box edit-box">
+            <p class="modal-ttl" id="edit-ttl">Edit Row</p>
+            <hr class="modal-hr">
+
+            <!-- Step 1: pick the row -->
+            <div id="edit-pick">
+                <label class="modal-label" id="edit-id-label" for="editId">ID of row to edit</label>
+                <input type="text" id="editId" placeholder="Enter ID" class="field-input"
+                       onkeydown="if (event.key === 'Enter') loadEditRow()" />
+                <!-- Second key field, shown only for variety: #editId holds the
+                     InsuranceID, this holds the Variety name. -->
+                <div id="editVarietyWrap" style="display:none; margin-top:12px;">
+                    <label class="modal-label" for="editVariety">Variety of row to edit</label>
+                    <input type="text" id="editVariety" placeholder="Enter Variety" class="field-input"
+                           onkeydown="if (event.key === 'Enter') loadEditRow()" />
+                </div>
+                <div class="modal-btn">
+                    <button class="btn btn-ghost" onclick="closeEdit()">Cancel</button>
+                    <button class="btn btn-primary" onclick="loadEditRow()">Load row</button>
+                </div>
+            </div>
+
+            <!-- Step 2: edit the fields (built by buildEditFields) -->
+            <div id="edit-form" style="display:none;">
+                <div id="edit-fields" class="edit-fields"></div>
+                <div class="modal-btn">
+                    <button class="btn btn-ghost" onclick="closeEdit()">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveEdit()">Save changes</button>
+                </div>
             </div>
         </div>
     </div>
@@ -237,6 +281,57 @@
     let searchTerm = '';
     const T = () => TABLES[cur];
 
+    /* ── Editing config ─────────────────────────────────────────
+       PK: the primary-key column used to find a row and address it in
+       the UPDATE's URL. EDITABLE: the columns an admin may change for
+       each table — these mirror ROW_SCHEMAS in validators.js and, like
+       it, deliberately exclude primary keys, foreign keys, and the
+       joined display columns (ProposerName / PlantationName). Variety has
+       no single PK, so it's absent from PK and handled by the composite-key
+       branches below; its InsuranceID stays out of EDITABLE (parent FK), but
+       the variety name itself is editable. */
+    const PK = {
+        proposer: 'ProposerID', farm: 'PlantationID', insurance: 'InsuranceID',
+        cpi: 'CPIID', cpilabor: 'LaborID', cpimaterial: 'MaterialID',
+    };
+    const EDITABLE = {
+        proposer: ['ProposerName', 'Address', 'Birthday', 'ContactNo', 'SecondaryContactNo',
+                   'CivilStatus', 'Sex', 'IP', 'Tribe', 'Spouse', 'SpouseBirthday'],
+        farm: ['PlantationName', 'FarmAddress', 'FarmArea', 'SoilType', 'SoilPH',
+               'Topography', 'IrrigationType'],
+        insurance: ['Beneficiary', 'Crops', 'PlantationSize', 'CoverageStart', 'CoverageEnd',
+                    'Flood', 'Typhoon', 'Drought', 'Pests', 'DesiredAmountCover',
+                    'SupervisingPT', 'PTDate', 'ProposerDate', 'ApplicationStatus'],
+        cpi: ['DaysNoAfterPlanting'],
+        cpilabor: ['LaborWorkforce', 'LaborQuantity', 'LaborCost'],
+        cpimaterial: ['MaterialItem', 'MaterialQuantity', 'MaterialCost'],
+        variety: ['Variety', 'AreaPlanted', 'DatePlanting', 'EstHarvestDate',
+                  'AgeGroup', 'NumTrees', 'AvgYield'],
+    };
+
+    /* Numeric floor/ceiling per column, mirrored from the public form's
+       FIELD_CONSTRAINTS (script.js). Keyed by DB column so the same limit
+       applies wherever that column is edited. Columns not listed here are
+       left unconstrained — exactly as the form leaves them. The last two come
+       from the backend ceiling rather than an HTML attribute: the form renders
+       those as a currency / capped-digit field, not a plain number input. */
+    const NUMERIC_LIMITS = {
+        FarmArea:            { min: 0.01, max: 999.99 },
+        SoilPH:              { min: 0.1,  max: 14.9 },
+        PlantationSize:      { min: 0.01, max: 999.99 },
+        AreaPlanted:         { min: 0.01, max: 999.99 },
+        AvgYield:            { min: 0.1,  max: 9999.9 },
+        NumTrees:            { min: 1,    max: 99999 },
+        DesiredAmountCover:  { min: 0.01, max: 99999999.99 },
+        DaysNoAfterPlanting: { min: 0,    max: 99999 },
+    };
+
+    // Pull the (n) out of a VARCHAR(n) / CHAR(n) type string, else null.
+    function charSize(type) {
+        const m = /^(?:VAR)?CHAR\((\d+)\)/.exec(type);
+        return m ? Number(m[1]) : null;
+    }
+
     /* ── Auth ───────────────────────────────────────────────────
        The token from POST /api/login lives in sessionStorage: it
        survives a reload but dies with the tab. Every admin request
@@ -334,21 +429,22 @@
         document.getElementById('ttl').textContent = T().label;
         document.getElementById('meta').textContent = T().meta;
         
+        // Delete and Edit now work for every table, including variety, which is
+        // addressed by its (InsuranceID, Variety) pair rather than a single key.
         const deleteBtn = document.querySelector('button[onclick="openDelete()"]');
-    
-        // Delete is allowed for every table EXCEPT variety: VarietyTable has no
-        // per-row key, so a single variety can only be removed via its policy.
-        if (name !== 'variety') {
-            deleteBtn.disabled = false;
-            deleteBtn.style.opacity = '1';
-            deleteBtn.style.cursor = 'pointer';
-        } else {
-            deleteBtn.disabled = true;
-            deleteBtn.style.opacity = '0.5';    // Make it look greyed out
-            deleteBtn.style.cursor = 'not-allowed'; // Change mouse cursor
-        }
+        const editBtn = document.querySelector('button[onclick="openEdit()"]');
+        setBtnEnabled(deleteBtn, true);
+        setBtnEnabled(editBtn, !!EDITABLE[name]);
 
         fetchTableData();
+    }
+
+    // Grey out and block a toolbar button (or restore it). Used to switch the
+    // Delete/Edit buttons off for tables they don't apply to.
+    function setBtnEnabled(btn, enabled) {
+        btn.disabled = !enabled;
+        btn.style.opacity = enabled ? '1' : '0.5';
+        btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
     }
 
     /* ── Search ─────────────────────────────────────────────────
@@ -536,7 +632,17 @@
             idName = "LaborID";
         } else if (cur === 'cpimaterial') {
             idName = "MaterialID";
+        } else if (cur === 'variety') {
+            idName = "InsuranceID";   // first half of the composite key
         }
+
+        // Variety needs a second key field (the variety name); every other
+        // table is identified by a single id, so that field stays hidden.
+        const varietyWrap = document.getElementById('deleteVarietyWrap');
+        const varietyInput = document.getElementById('deleteVariety');
+        const isVariety = cur === 'variety';
+        varietyWrap.style.display = isVariety ? '' : 'none';
+        if (isVariety) varietyInput.value = '';
 
         // Update the UI elements
         title.textContent = `Delete from ${T().label}`;
@@ -558,11 +664,19 @@
         // confirmation step — no extra blocking confirm() needed.
         if (!idValue) { showToast('Please enter an ID.', 'error'); return; }
 
+        // Variety needs both halves of its composite key before we can build
+        // the endpoint.
+        let varietyValue = '';
+        if (cur === 'variety') {
+            varietyValue = document.getElementById('deleteVariety').value.trim();
+            if (!varietyValue) { showToast('Please enter the Variety.', 'error'); return; }
+        }
+
         try {
             // The cascade now lives in the backend, inside a single transaction,
             // so the browser makes exactly one request per delete. Insurance and
-            // CPI use dedicated cascade routes; anything else hits the generic
-            // single-row route.
+            // CPI use dedicated cascade routes; variety uses its composite-key
+            // route; anything else hits the generic single-row route.
             let endpoint;
             if (cur === 'insurance') {
                 endpoint = `${API_BASE}/insurance/${idValue}`;
@@ -572,6 +686,8 @@
                 endpoint = `${API_BASE}/proposer/${idValue}`;
             } else if (cur === 'farm') {
                 endpoint = `${API_BASE}/farm/${idValue}`;
+            } else if (cur === 'variety') {
+                endpoint = `${API_BASE}/tables/variety/${encodeURIComponent(idValue)}/${encodeURIComponent(varietyValue)}`;
             } else {
                 endpoint = `${API_BASE}/tables/${cur}/${idValue}`;
             }
@@ -589,6 +705,312 @@
             }
         } catch (error) {
             console.error(error);
+            showToast('Server is not responding.', 'error');
+        }
+    }
+
+    /* ── Edit Row ───────────────────────────────────────────────
+       A full-row version of the inline status dropdown: pick a row by
+       its ID, edit its fields in a modal, and PUT the changes back. The
+       rows are already in memory (T().rows), so loading a row to edit
+       needs no extra request — we just find it and pre-fill the form. */
+
+    // Tracks which row the open Edit modal is saving. For single-key tables
+    // that's the PK value; for variety it's the InsuranceID, paired with the
+    // OLD variety name held in editVarietyKey (the WHERE half of its update).
+    let editId = null;
+    let editVarietyKey = null;
+
+    function openEdit() {
+        // Guard: tables not listed in EDITABLE can't be edited.
+        if (!EDITABLE[cur]) { showToast('This table can’t be edited.', 'error'); return; }
+
+        editId = null;
+        editVarietyKey = null;
+        // Variety has no single PK — its first key is InsuranceID.
+        const keyName = cur === 'variety' ? 'InsuranceID' : PK[cur];
+        document.getElementById('edit-ttl').textContent = `Edit ${T().label}`;
+        document.getElementById('edit-id-label').textContent = `${keyName} of row to edit`;
+
+        const input = document.getElementById('editId');
+        input.placeholder = `Enter ${keyName}`;
+        input.value = '';
+
+        // Variety needs a second key field (the variety name); hidden otherwise.
+        const isVariety = cur === 'variety';
+        document.getElementById('editVarietyWrap').style.display = isVariety ? '' : 'none';
+        if (isVariety) document.getElementById('editVariety').value = '';
+
+        // Always reopen on step 1 (the ID picker), hiding any previous form.
+        document.getElementById('edit-pick').style.display = '';
+        document.getElementById('edit-form').style.display = 'none';
+
+        document.getElementById('edit-overlay').style.display = 'flex';
+        input.focus();
+    }
+
+    function closeEdit() {
+        document.getElementById('edit-overlay').style.display = 'none';
+    }
+
+    // Step 1 -> 2: find the typed ID among the in-memory rows and, if it
+    // exists, build a pre-filled form for it.
+    function loadEditRow() {
+        const idValue = document.getElementById('editId').value.trim();
+        if (!idValue) { showToast('Please enter an ID.', 'error'); return; }
+
+        let row;
+        if (cur === 'variety') {
+            // Composite key: match BOTH InsuranceID and the variety name.
+            const varValue = document.getElementById('editVariety').value.trim();
+            if (!varValue) { showToast('Please enter the Variety.', 'error'); return; }
+            row = T().rows.find(r => String(r.InsuranceID) === idValue && String(r.Variety) === varValue);
+            if (!row) {
+                showToast(`No variety “${varValue}” on ${idValue}.`, 'error');
+                return;
+            }
+            editId = idValue;
+            editVarietyKey = varValue;   // remember the OLD name for the WHERE
+        } else {
+            const pk = PK[cur];
+            // == via String() so a numeric PK (e.g. LaborID) matches the typed text.
+            row = T().rows.find(r => String(r[pk]) === idValue);
+            if (!row) {
+                showToast(`No row with ${pk} “${idValue}” in this table.`, 'error');
+                return;
+            }
+            editId = idValue;
+        }
+
+        buildEditFields(row);
+        document.getElementById('edit-pick').style.display = 'none';
+        document.getElementById('edit-form').style.display = '';
+    }
+
+    // Render one labelled input per editable column, pre-filled from `row`.
+    function buildEditFields(row) {
+        const wrap = document.getElementById('edit-fields');
+        wrap.innerHTML = '';
+
+        EDITABLE[cur].forEach(name => {
+            const meta = T().cols.find(c => c.n === name) || { n: name, t: 'VARCHAR' };
+
+            const field = document.createElement('div');
+            field.className = 'edit-field';
+
+            const label = document.createElement('label');
+            label.className = 'modal-label';
+            label.textContent = name;
+            label.setAttribute('for', 'ef-' + name);
+            field.appendChild(label);
+
+            const input = buildEditInput(name, meta, row[name]);
+            input.id = 'ef-' + name;
+            field.appendChild(input);
+
+            wrap.appendChild(field);
+        });
+
+        // Re-create the public form's cross-field rules for whichever table is
+        // being edited (IP/Tribe, spouse lock, date ordering, AgeGroup auto-calc).
+        wireEditCouplings();
+    }
+
+    // Apply the form's cross-field behaviour to the freshly built edit fields.
+    // Each helper no-ops if its fields aren't present, so this is safe to call
+    // for every table.
+    function wireEditCouplings() {
+        if (cur === 'proposer') { wireIpTribe(); wireSpouse(); }
+        else if (cur === 'insurance') wireCoverageDates();
+        else if (cur === 'variety') wireAgeGroup();
+    }
+
+    // Generic lock helper: clear + disable `targets` whenever `on()` is false,
+    // re-enable them when true, and keep them in sync as `trigger` changes.
+    // This is the shared shape behind both the IP/Tribe and spouse rules.
+    function lockUnless(trigger, on, targets) {
+        const sync = () => {
+            const active = on();
+            targets.forEach(el => {
+                el.disabled = !active;
+                el.style.opacity = active ? '1' : '0.5';
+                if (!active) el.value = '';   // wipe, just like the form does
+            });
+        };
+        trigger.onchange = sync;
+        sync();   // set the initial state from the loaded row
+    }
+
+    // Mirror script.js's toggleTribe(): the Tribe box only applies when IP is
+    // "Yes"; otherwise it's wiped and locked.
+    function wireIpTribe() {
+        const ipSel = document.getElementById('ef-IP');
+        const tribe = document.getElementById('ef-Tribe');
+        if (!ipSel || !tribe) return;
+        lockUnless(ipSel, () => ipSel.value === '1', [tribe]);
+    }
+
+    // Mirror script.js's toggleSpouse(): Spouse + SpouseBirthday only apply when
+    // the proposer is Married (CivilStatus 'M'); otherwise they're wiped + locked.
+    function wireSpouse() {
+        const civil  = document.getElementById('ef-CivilStatus');
+        const spouse = document.getElementById('ef-Spouse');
+        const sBday  = document.getElementById('ef-SpouseBirthday');
+        if (!civil || !spouse || !sBday) return;
+        lockUnless(civil, () => civil.value === 'M', [spouse, sBday]);
+    }
+
+    // Mirror the form's coverage-date rule: the end date can't precede the
+    // start date. (The form also blocks past START dates, but we allow them
+    // here so existing policies stay editable.)
+    function wireCoverageDates() {
+        const start = document.getElementById('ef-CoverageStart');
+        const end   = document.getElementById('ef-CoverageEnd');
+        if (!start || !end) return;
+
+        const sync = () => {
+            end.min = start.value || '';
+            // Drop an end date that's now before the start, like the form does.
+            if (end.value && start.value && end.value < start.value) end.value = '';
+        };
+        start.onchange = sync;
+        sync();
+    }
+
+    // Mirror the form: AgeGroup is derived from the planting/harvest dates and
+    // never typed. Lock the field read-only and recompute it on load and on
+    // any date change; also keep harvest from preceding planting.
+    function wireAgeGroup() {
+        const planting = document.getElementById('ef-DatePlanting');
+        const harvest  = document.getElementById('ef-EstHarvestDate');
+        const age      = document.getElementById('ef-AgeGroup');
+        if (!age) return;
+
+        age.readOnly = true;          // computed value — not hand-editable
+        age.style.opacity = '0.7';
+
+        const sync = () => {
+            if (planting && harvest) {
+                harvest.min = planting.value || '';
+                if (harvest.value && planting.value && harvest.value < planting.value) harvest.value = '';
+            }
+            age.value = ageDecimal(planting && planting.value, harvest && harvest.value);
+        };
+        if (planting) planting.onchange = sync;
+        if (harvest)  harvest.onchange  = sync;
+        sync();
+    }
+
+    // The decimal age the form's calcAge() submits: years + months/12, to 2dp.
+    // Empty planting date -> '' (nothing to compute yet), matching the form.
+    function ageDecimal(plantingStr, harvestStr) {
+        if (!plantingStr) return '';
+        const planted = new Date(plantingStr);
+        const target  = harvestStr ? new Date(harvestStr) : new Date();
+        if (planted > target) return '0.00';
+
+        let yrs = target.getFullYear() - planted.getFullYear();
+        let mos = target.getMonth() - planted.getMonth();
+        if (target.getDate() < planted.getDate()) mos--;   // day not reached yet
+        if (mos < 0) { yrs--; mos += 12; }                 // borrow a year
+        return (yrs + mos / 12).toFixed(2);
+    }
+
+    // Choose the right widget for a column: dropdowns for the fixed-value
+    // columns and booleans, a date picker for DATEs, number inputs for
+    // INT/DECIMAL, and a plain text box otherwise.
+    function buildEditInput(name, meta, value) {
+        if (name === 'ApplicationStatus') return buildSelect(STATUSES, value, 'Pending');
+        if (name === 'CivilStatus') return buildSelect(['S', 'M', 'W', 'SE'], value);
+        if (name === 'Sex') return buildSelect(['M', 'F'], value);
+
+        // Booleans: a Yes/No dropdown whose option VALUES are '1'/'0', which is
+        // exactly what the backend's bool validator accepts.
+        if (meta.t === 'TINYINT(1)') {
+            const sel = document.createElement('select');
+            sel.className = 'field-input';
+            [['1', 'Yes'], ['0', 'No']].forEach(([v, text]) => {
+                const o = document.createElement('option');
+                o.value = v; o.textContent = text;
+                sel.appendChild(o);
+            });
+            sel.value = Number(value) === 1 ? '1' : '0';
+            return sel;
+        }
+
+        const input = document.createElement('input');
+        input.className = 'field-input';
+
+        if (meta.t === 'DATE') {
+            input.type = 'date';
+            input.value = value ? String(value).split('T')[0] : '';
+        } else if (meta.t === 'INT' || meta.t.startsWith('DECIMAL')) {
+            input.type = 'number';
+            input.step = meta.t === 'INT' ? '1' : 'any';
+            // Mirror the form's numeric floor/ceiling for this column, if any.
+            const lim = NUMERIC_LIMITS[name];
+            if (lim) { input.min = lim.min; input.max = lim.max; }
+            input.value = (value !== null && value !== undefined) ? value : '';
+        } else {
+            input.type = 'text';
+            // Cap text at the column's VARCHAR/CHAR size — the same limits the
+            // public form enforces via FIELD_CONSTRAINTS.
+            const size = charSize(meta.t);
+            if (size) input.maxLength = size;
+            // Set .value as a property (not innerHTML) so DB content can never
+            // be parsed as markup — same safeguard as render() uses.
+            input.value = (value !== null && value !== undefined) ? value : '';
+        }
+        return input;
+    }
+
+    function buildSelect(options, current, fallback) {
+        const sel = document.createElement('select');
+        sel.className = 'field-input';
+        options.forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt; o.textContent = opt;
+            sel.appendChild(o);
+        });
+        sel.value = options.includes(current) ? current : (fallback || options[0]);
+        return sel;
+    }
+
+    // Step 2 -> save: collect every field and PUT it. The backend validates and
+    // writes the change; on success we toast and refresh the table.
+    async function saveEdit() {
+        const payload = {};
+        EDITABLE[cur].forEach(name => {
+            payload[name] = document.getElementById('ef-' + name).value;
+        });
+
+        // Variety updates address the row by its (InsuranceID, OLD variety)
+        // pair; every other table by its single PK in the URL.
+        const endpoint = cur === 'variety'
+            ? `${API_BASE}/tables/variety/${encodeURIComponent(editId)}/${encodeURIComponent(editVarietyKey)}`
+            : `${API_BASE}/tables/${cur}/${encodeURIComponent(editId)}`;
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(10000)
+            });
+            if (handleUnauthorized(response)) return closeEdit();
+
+            const result = await response.json().catch(() => ({}));
+            if (response.ok) {
+                showToast(result.message, 'success');
+                closeEdit();
+                fetchTableData();   // redraw with the saved values
+            } else {
+                // Validation failures come back as a `details` array — join them.
+                const msg = result.message || (result.details || []).join(' ') || 'Update failed';
+                showToast('Error: ' + msg, 'error');
+            }
+        } catch (error) {
+            console.error('Edit save failed:', error);
             showToast('Server is not responding.', 'error');
         }
     }

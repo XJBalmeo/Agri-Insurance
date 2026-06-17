@@ -269,6 +269,16 @@ td { padding: 12px; border-bottom: 1px solid var(--border-color); }
 .modal-hr { border: none; border-top: 1px solid var(--border-color); margin: 12px 0 16px; }
 .modal-label { font-size: 13px; color: var(--text-secondary); }
 .modal-box .field-input { margin-top: 8px; }
+
+/* Edit modal — the field list can be long (Insurance has 14 fields), so it
+   scrolls within the box instead of pushing the Save/Cancel buttons off-screen. */
+.edit-fields {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 4px;   /* keep the scrollbar off the inputs */
+}
+.edit-field { margin-bottom: 12px; }
+.edit-field .field-input { margin-top: 4px; }
 .modal-warn {
     display: flex;
     gap: 8px;

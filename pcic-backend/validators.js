@@ -37,6 +37,29 @@ function isValidDate(value) {
     return typeof value === 'string' && value.trim() !== '' && Number.isFinite(Date.parse(value));
 }
 
+// Derive the crop's "age group" — a decimal age in years (e.g. 0.42 = 5 months)
+// computed from the planting date up to the estimated harvest date (or today,
+// if no harvest date is given). This is the single source of truth: the client
+// computes the same value for display, but the backend recomputes it on write
+// so a tampered or stale submitted value can never reach the database. Mirrors
+// the frontend calcAge() in script.js exactly. Returns null if planting is not
+// a valid date, or '0.00' if planting somehow falls after the target date.
+function computeAgeGroup(plantingStr, harvestStr) {
+    if (!isValidDate(plantingStr)) return null;
+
+    const planted = new Date(plantingStr);
+    const target  = isValidDate(harvestStr) ? new Date(harvestStr) : new Date();
+
+    if (planted > target) return '0.00';
+
+    let yrs = target.getFullYear() - planted.getFullYear();
+    let mos = target.getMonth() - planted.getMonth();
+    if (target.getDate() < planted.getDate()) mos--;   // day-of-month not reached yet
+    if (mos < 0) { yrs--; mos += 12; }                 // borrow a year
+
+    return (yrs + mos / 12).toFixed(2);
+}
+
 // A trimmed, non-empty string.
 function isNonEmptyString(value) {
     return typeof value === 'string' && value.trim() !== '';
@@ -318,4 +341,255 @@ function validateApplicationData(data) {
     return errors;
 }
 
-module.exports = { sanitizeApplicationData, validateApplicationData, isValidStatus, VALID_STATUSES };
+// ======================================================
+// ADMIN ROW EDITING — per-table "editable column" schemas
+// ======================================================
+// Each table lists ONLY the columns an admin is allowed to change. Three kinds
+// of column are deliberately ABSENT, which is what keeps editing safe:
+//   * Primary keys (ProposerID, LaborID, …) — the PK identifies the row, so it
+//     is only ever used in the WHERE clause, never in SET. (You confirmed this:
+//     primary keys must not be editable.)
+//   * Foreign keys (CPIID, ProposerID, PlantationID on child tables) — leaving
+//     them out means an edit can never re-point a row to a different parent and
+//     orphan it.
+//   * Joined display columns (ProposerName / PlantationName shown in the admin
+//     child tables) — those aren't real columns of the table being edited.
+// VarietyTable is intentionally missing entirely: it has no primary key, so a
+// single variety row can't be targeted by a WHERE clause (same reason Delete
+// skips it).
+//
+// Each column's `type` drives both validation here and the input widget the
+// admin page renders. `max` mirrors the Data Dictionary ceilings already used
+// above so an edit can't slip past the limits the public form enforces.
+const ROW_SCHEMAS = {
+    proposer: {
+        table: 'ProposerTable',
+        idColumn: 'ProposerID',
+        columns: {
+            ProposerName:       { type: 'text',  required: true,  max: 30 },
+            Address:            { type: 'text',  required: true,  max: 100 },
+            Birthday:           { type: 'date',  required: true },
+            ContactNo:          { type: 'phone', required: true },
+            SecondaryContactNo: { type: 'phone', required: false },
+            CivilStatus:        { type: 'enum',  options: CIVIL_STATUSES },
+            Sex:                { type: 'enum',  options: SEXES },
+            IP:                 { type: 'bool' },
+            Tribe:              { type: 'text',  required: false, max: 20 },
+            Spouse:             { type: 'text',  required: false, max: 30 },
+            SpouseBirthday:     { type: 'date',  required: false },
+        },
+    },
+    farm: {
+        table: 'FarmTable',
+        idColumn: 'PlantationID',
+        columns: {
+            PlantationName: { type: 'text',   required: true, max: 20 },
+            FarmAddress:    { type: 'text',   required: true, max: 100 },
+            FarmArea:       { type: 'number', required: true, max: MAX_VALUES.farmArea },
+            SoilType:       { type: 'text',   required: true, max: 20 },
+            // Soil pH has its own range (0.1–14.9) rather than a simple "> 0".
+            SoilPH:         { type: 'number', required: true, min: 0.1, max: 14.9 },
+            Topography:     { type: 'text',   required: true, max: 20 },
+            IrrigationType: { type: 'text',   required: true, max: 20 },
+        },
+    },
+    insurance: {
+        table: 'InsuranceTable',
+        idColumn: 'InsuranceID',
+        columns: {
+            Beneficiary:        { type: 'text',   required: true, max: 30 },
+            Crops:              { type: 'text',   required: true, max: 20 },
+            PlantationSize:     { type: 'number', required: true, max: MAX_VALUES.plantationSize },
+            CoverageStart:      { type: 'date',   required: true },
+            CoverageEnd:        { type: 'date',   required: true },
+            Flood:              { type: 'bool' },
+            Typhoon:            { type: 'bool' },
+            Drought:            { type: 'bool' },
+            Pests:              { type: 'bool' },
+            DesiredAmountCover: { type: 'number', required: true, max: MAX_VALUES.desiredAmountCover },
+            SupervisingPT:      { type: 'text',   required: true, max: 30 },
+            PTDate:             { type: 'date',   required: true },
+            ProposerDate:       { type: 'date',   required: false },
+            ApplicationStatus:  { type: 'enum',   options: VALID_STATUSES },
+        },
+    },
+    cpi: {
+        table: 'CPITable',
+        idColumn: 'CPIID',
+        columns: {
+            // 0 is valid here ("on the planting day itself"), so allowZero.
+            DaysNoAfterPlanting: { type: 'number', required: true, integer: true, allowZero: true, max: MAX_VALUES.daysAfterPlanting },
+        },
+    },
+    cpilabor: {
+        table: 'CPILaborTable',
+        idColumn: 'LaborID',
+        columns: {
+            LaborWorkforce: { type: 'text',   required: true, max: MAX_LENGTHS.laborWorkforce },
+            LaborQuantity:  { type: 'number', required: true, integer: true, max: MAX_VALUES.laborQuantity },
+            LaborCost:      { type: 'number', required: true, max: MAX_VALUES.laborCost },
+        },
+    },
+    cpimaterial: {
+        table: 'CPIMaterialTable',
+        idColumn: 'MaterialID',
+        columns: {
+            MaterialItem:     { type: 'text',   required: true, max: MAX_LENGTHS.materialItem },
+            MaterialQuantity: { type: 'number', required: true, integer: true, max: MAX_VALUES.materialQuantity },
+            MaterialCost:     { type: 'number', required: true, max: MAX_VALUES.materialCost },
+        },
+    },
+    // Variety has no surrogate key: its dedicated PUT route addresses a row by
+    // the (InsuranceID, Variety) pair, so InsuranceID is omitted here (it's the
+    // parent FK, never edited). Variety itself IS editable — a rename rewrites
+    // the row, and the UNIQUE key rejects a clash with another variety.
+    variety: {
+        table: 'VarietyTable',
+        keyColumns: ['InsuranceID', 'Variety'],
+        columns: {
+            Variety:        { type: 'text',   required: true, max: MAX_LENGTHS.varietyName },
+            AreaPlanted:    { type: 'number', required: true, max: MAX_VALUES.areaPlanted },
+            DatePlanting:   { type: 'date',   required: true },
+            EstHarvestDate: { type: 'date',   required: true },
+            // AgeGroup is intentionally NOT listed: it is a derived field, not
+            // hand-editable. It is recomputed from the dates below, so any value
+            // the admin form submits for it is ignored.
+            NumTrees:       { type: 'number', required: true, integer: true, max: MAX_VALUES.numTrees },
+            AvgYield:       { type: 'number', required: true, max: MAX_VALUES.avgYield },
+        },
+    },
+};
+
+// Validate one numeric edit field, pushing a message onto `errors` if it fails.
+// Mirrors the rules in isPositiveWithinMax / isNonNegativeWithinMax above, but
+// reads its bounds from the column descriptor so each column can differ
+// (e.g. SoilPH's 0.1 floor, "days after planting" allowing zero).
+function validateNumberField(value, col, label, errors) {
+    // Number('') is 0, so an empty field must be caught before coercion —
+    // otherwise a blank input would masquerade as a valid 0.
+    if (value === '' || value === null || value === undefined) {
+        errors.push(`${label} is required and must be a number.`);
+        return;
+    }
+    const n = Number(value);
+    if (!Number.isFinite(n)) {
+        errors.push(`${label} must be a number.`);
+        return;
+    }
+    if (col.integer && !Number.isInteger(n)) {
+        errors.push(`${label} must be a whole number.`);
+        return;
+    }
+    if (col.min !== undefined) {
+        if (n < col.min) errors.push(`${label} must be at least ${col.min}.`);
+    } else if (col.allowZero) {
+        if (n < 0) errors.push(`${label} must be zero or greater.`);
+    } else if (n <= 0) {
+        errors.push(`${label} must be greater than zero.`);
+    }
+    if (col.max !== undefined && n > col.max) {
+        errors.push(`${label} must be at most ${col.max}.`);
+    }
+}
+
+/**
+ * Validate + sanitize an admin row edit against ROW_SCHEMAS[tableName].
+ * Returns { errors, values }:
+ *   - errors: human-readable messages (empty array means valid)
+ *   - values: { ColumnName: cleanValue } ready to bind into an UPDATE; only
+ *     trustworthy when errors is empty.
+ * Every editable column for the table is expected in `body` (the admin form
+ * sends them all, pre-filled), so a successful edit rewrites the whole set of
+ * editable columns at once.
+ */
+function validateRowUpdate(tableName, body) {
+    const schema = ROW_SCHEMAS[tableName];
+    if (!schema) return { errors: ['This table cannot be edited.'], values: {} };
+    if (!body || typeof body !== 'object') {
+        return { errors: ['Request body is missing or malformed.'], values: {} };
+    }
+
+    const errors = [];
+    const values = {};
+
+    for (const [name, col] of Object.entries(schema.columns)) {
+        const raw = body[name];
+
+        if (col.type === 'text') {
+            const v = typeof raw === 'string' ? raw.trim() : '';
+            if (v === '') {
+                if (col.required) errors.push(`${name} is required.`);
+                else values[name] = null;          // optional + blank -> NULL
+            } else if (v.length > col.max) {
+                errors.push(`${name} must be at most ${col.max} characters.`);
+            } else {
+                values[name] = v;
+            }
+        } else if (col.type === 'date') {
+            const v = typeof raw === 'string' ? raw.trim() : '';
+            if (v === '') {
+                if (col.required) errors.push(`${name} is required.`);
+                else values[name] = null;
+            } else if (!isValidDate(v)) {
+                errors.push(`${name} must be a valid date.`);
+            } else {
+                values[name] = v;
+            }
+        } else if (col.type === 'phone') {
+            const v = typeof raw === 'string' ? raw.trim() : '';
+            if (v === '') {
+                if (col.required) errors.push(`${name} is required.`);
+                else values[name] = null;
+            } else if (!isPhContactNumber(v)) {
+                errors.push(`${name} must be a valid Philippine phone number.`);
+            } else {
+                values[name] = v;
+            }
+        } else if (col.type === 'enum') {
+            const v = typeof raw === 'string' ? raw.trim() : raw;
+            if (!col.options.includes(v)) {
+                errors.push(`${name} must be one of: ${col.options.join(', ')}.`);
+            } else {
+                values[name] = v;
+            }
+        } else if (col.type === 'bool') {
+            // Accept the dropdown's '1'/'0' as well as real booleans/numbers.
+            const truthy = raw === true  || raw === 1 || raw === '1';
+            const falsy  = raw === false || raw === 0 || raw === '0';
+            if (!truthy && !falsy) errors.push(`${name} must be Yes or No.`);
+            else values[name] = truthy ? 1 : 0;
+        } else if (col.type === 'number') {
+            const before = errors.length;
+            validateNumberField(raw, col, name, errors);
+            if (errors.length === before) values[name] = Number(raw);
+        }
+    }
+
+    // Cross-field rule (insurance only): coverage must end after it starts.
+    if (tableName === 'insurance' && values.CoverageStart && values.CoverageEnd
+        && new Date(values.CoverageStart) >= new Date(values.CoverageEnd)) {
+        errors.push('Coverage end date must be after the coverage start date.');
+    }
+
+    // Cross-field rule (variety only): harvest must come after planting —
+    // the same check the application form enforces when a policy is created.
+    if (tableName === 'variety' && values.DatePlanting && values.EstHarvestDate
+        && new Date(values.DatePlanting) >= new Date(values.EstHarvestDate)) {
+        errors.push('Estimated harvest date must be after the planting date.');
+    }
+
+    // Derive AgeGroup from the (validated) dates so the stored value always
+    // matches the planting/harvest pair — never a value the client supplied.
+    // Only when both dates passed validation; otherwise we'd compute from junk.
+    if (tableName === 'variety' && errors.length === 0
+        && values.DatePlanting && values.EstHarvestDate) {
+        values.AgeGroup = computeAgeGroup(values.DatePlanting, values.EstHarvestDate);
+    }
+
+    return { errors, values };
+}
+
+module.exports = {
+    sanitizeApplicationData, validateApplicationData, isValidStatus, VALID_STATUSES,
+    ROW_SCHEMAS, validateRowUpdate, computeAgeGroup,
+};
