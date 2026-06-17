@@ -12,22 +12,6 @@ A full-stack web application designed to digitize and streamline the application
 
 ---
 
-## 🗂️ Data Dictionary Alignment
-
-The MySQL schema (`pcic-backend/schema.sql`) follows the project **Data Dictionary**: every `VARCHAR`/`CHAR` size matches, and the numeric *size* column is read as total digits (`float 10 → DECIMAL(10,2)`, `float 5 → DECIMAL(5,2)`, `integer 5 → max 99999`). These **size/length** limits are enforced in three places — the form (`maxlength`/`max`), the API (`pcic-backend/validators.js`), and the database column type — so an oversized value can never reach a column it doesn't fit.
-
-**Allowable-value sets** are a separate matter — where each is actually checked depends on the column:
-- `ApplicationStatus ∈ {Pending, Approved, Rejected}` is enforced by the **database** itself, because it is a real `ENUM` (`schema.sql`); MySQL rejects anything else.
-- `CivilStatus ∈ {S, M, W, SE}` and `Sex ∈ {M, F}` are stored as plain `CHAR(2)`/`CHAR(1)` columns, so the **database only checks the length, not the set of values**. The allowed sets are enforced by the **form and the API** (`CIVIL_STATUSES`/`SEXES` in `pcic-backend/validators.js`) before the value ever reaches the insert.
-
-**Intentional deviations from the Data Dictionary** (kept on purpose, documented for the defense):
-- `CPIID` / `MaterialID` / `LaborID` are `INT AUTO_INCREMENT` (dictionary: varchar) so the backend can read `result.insertId`. `VarietyTable` has no surrogate key (matching the dictionary); its rows are reached through their parent `InsuranceID`.
-- Money/area columns use `DECIMAL` (dictionary: float) to avoid floating-point rounding on peso amounts.
-- `Birthday`, `CivilStatus`, and `Sex` are `NOT NULL` (dictionary leaves them blank) — `Birthday` is half the proposer identity key, and the form requires all three.
-- `ApplicationStatus` (ENUM) is a post-dictionary status-tracking feature.
-
-Existing databases: run `pcic-backend/migrations/2026-06-13-align-to-data-dictionary.sql` to resize columns in place (see the file header — shrinking fails on rows that already exceed the new size).
-
 ## 🛠️ Tech Stack
 * **Frontend:** HTML5, JavaScript (Vanilla), Tailwind CSS
 * **Backend:** Node.js, Express.js
