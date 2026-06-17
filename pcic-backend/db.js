@@ -9,6 +9,11 @@ const pool = mysql.createPool({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
+    // Return DATE/DATETIME columns as literal 'YYYY-MM-DD' strings instead of
+    // JS Date objects. Without this, mysql2 builds a Date in the server's local
+    // timezone, and JSON.stringify then serializes it to UTC — shifting pure
+    // calendar dates (Birthday, CoverageStart, etc.) back a day in UTC+8.
+    dateStrings: true,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
