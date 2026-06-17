@@ -62,6 +62,27 @@ const FIELD_CONSTRAINTS = [
 ];
 
 /* ══════════════════════════════════════════════════════════════
+   DATE HELPERS
+══════════════════════════════════════════════════════════════ */
+
+/**
+ * Returns today's date as a "YYYY-MM-DD" string in the user's LOCAL timezone.
+ *
+ * Why not `new Date().toISOString().split('T')[0]`? toISOString() always
+ * formats in UTC. For the Philippines (UTC+8), during local evening/night
+ * the UTC date is still "yesterday", so that approach would lock the form to
+ * the wrong day. Reading getFullYear/getMonth/getDate gives the LOCAL parts,
+ * which always match the user's wall clock.
+ */
+function todayLocal() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0'); // getMonth() is 0-based
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/* ══════════════════════════════════════════════════════════════
    VALIDATION
 ══════════════════════════════════════════════════════════════ */
 
@@ -112,6 +133,15 @@ function validateStep(step) {
     const end = document.getElementById('coverageEnd')?.value;
     if (start && end && new Date(start) >= new Date(end)) {
       showFieldError(document.getElementById('coverageEnd'), 'Coverage end date must be after the start date.');
+      valid = false;
+    }
+
+    // Coverage can't start in the past. The picker's min blocks this in the
+    // UI; re-check here so a typed/tampered value can't slip past. String
+    // compare is safe because YYYY-MM-DD sorts chronologically.
+    const today = todayLocal();
+    if (start && start < today) {
+      showFieldError(document.getElementById('coverageStart'), 'Coverage start date cannot be in the past.');
       valid = false;
     }
   }
@@ -232,6 +262,34 @@ function clearErrorOnInput(el) {
   const clear = () => hideFieldError(el);
   el.addEventListener('input',  clear);
   el.addEventListener('change', clear);
+}
+
+/* ── Live numeric validation (fires on blur) ────────────────────
+   Flags a number that's non-numeric, negative, or outside the
+   field's min/max as soon as focus leaves it — instead of waiting
+   for "Next". Empty fields are left alone: "required" is still
+   enforced by validateStep() when the user advances. */
+function validateNumberField(el) {
+  if (!el) return;
+  const raw = el.value.trim();
+  if (raw === '') { hideFieldError(el); return; }   // empty → caught on Next
+
+  // Currency fields carry "₱"/commas, so parse them; plain number
+  // inputs can be read straight from the value.
+  const isCurrency = el.classList.contains('currency-input');
+  const num = isCurrency ? parseCurrency(el.value) : parseFloat(raw);
+
+  // min/max were set on the elements from FIELD_CONSTRAINTS; fall back
+  // to "0 or more" for fields (like the peso inputs) with no attributes.
+  const min = el.min !== '' ? parseFloat(el.min) : 0;
+  const max = el.max !== '' ? parseFloat(el.max) : Infinity;
+
+  if (Number.isNaN(num) || num < min || num > max) {
+    const range = max === Infinity ? `${min} or more` : `between ${min} and ${max}`;
+    showFieldError(el, `Enter a number ${range}.`);
+  } else {
+    hideFieldError(el);
+  }
 }
 
 /* ── Toast ────────────────────────────────────────────────────── */
@@ -832,6 +890,47 @@ document.addEventListener('focusin', (e) => {
   e.target.value = String(parseCurrency(e.target.value)); // raw digits while editing
 });
 
+/* ── Live validation on blur for numeric & DAP fields ───────────
+   focusout (unlike blur) bubbles to document, so one listener pair
+   covers every number/currency field — including CPI rows added
+   later. Registered AFTER the currency formatter above so the value
+   is already normalised by the time we validate it. */
+document.addEventListener('focusout', (e) => {
+  const t = e.target;
+  if (t?.matches?.('input[type="number"], .currency-input')) {
+    validateNumberField(t);
+  }
+});
+
+// Days-After-Planting: on top of the generic numeric check, flag a day
+// that duplicates another schedule's day (otherwise only caught on Next).
+// .dap-input has no id, so showFieldError can't attach a message — we
+// highlight the field and surface the reason via a toast, mirroring
+// validateStep(). Runs after the numeric listener so its hideFieldError
+// doesn't wipe the highlight we add here.
+document.addEventListener('focusout', (e) => {
+  const t = e.target;
+  if (!t?.classList?.contains('dap-input')) return;
+  const raw = t.value.trim();
+  if (raw === '') return;
+  const dupes = [...document.querySelectorAll('.dap-input')]
+    .filter(i => i !== t && i.value.trim() === raw);
+  if (dupes.length > 0) {
+    t.classList.add('field-error');
+    showToast('Cannot have multiple schedules for the same Day After Planting.');
+  }
+});
+
+// Clear a live numeric / DAP error the moment the user edits the field,
+// matching how clearErrorOnInput behaves for required fields. For no-id
+// fields (DAP) hideFieldError just removes the red outline.
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (t?.matches?.('input[type="number"], .currency-input, .dap-input')) {
+    hideFieldError(t);
+  }
+});
+
 /* ── Grand total (derived) ── */
 function recalcTotal() {
   let total = 0;
@@ -903,6 +1002,21 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  /* 5c. Contact number: flag a typed-but-not-yet-added value when focus
+     leaves the field (same rule as doAddTag). The message hangs on the
+     wrap; typing again clears it. Empty is fine — they may just be done. */
+  const tagInput = document.querySelector('#contactWrap .tag-input');
+  if (tagInput) {
+    const wrap = document.getElementById('contactWrap');
+    tagInput.addEventListener('blur', () => {
+      const val = tagInput.value.trim();
+      if (val && (val.length < 7 || !/^\d+$/.test(val))) {
+        showFieldError(wrap, 'Please enter a valid phone number (digits only, at least 7 digits).');
+      }
+    });
+    tagInput.addEventListener('input', () => hideFieldError(wrap));
+  }
+
   /* 6. Early active-policy warning once name AND birthday are filled in */
   document.getElementById('proposerName')?.addEventListener('blur', checkActivePolicy);
   document.getElementById('birthday')?.addEventListener('change', checkActivePolicy);
@@ -910,7 +1024,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* 7. Set default date for proposer date (today) */
   const proposeDate = document.getElementById('proposeDate');
   if (proposeDate && !proposeDate.value) {
-    proposeDate.value = new Date().toISOString().split('T')[0];
+    proposeDate.value = todayLocal();
   }
 
   /* 8. Restore a saved draft (if any), then guarantee one CPI schedule
@@ -923,6 +1037,34 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* 9. Start auto-saving every change to localStorage. */
   initAutosave(draftRestored);
+
+  /* 9b. Coverage dates. Both dates allow today and onwards — coverage can't
+         start in the past. We set min === today so past days are greyed/
+         un-clickable while today and future days stay selectable, and default
+         the START to today as a convenience (the user can still pick a later
+         day). The END date follows the chosen start: see the change handler
+         below, which keeps end.min >= start so you can't pick an end before
+         the start. Runs after restoreDraft() so a stale value can't win. */
+  const today = todayLocal(); // local YYYY-MM-DD, not UTC
+  const coverageStart = document.getElementById('coverageStart');
+  const coverageEnd = document.getElementById('coverageEnd');
+  if (coverageStart) {
+    coverageStart.min = today;
+    if (!coverageStart.value) coverageStart.value = today; // sensible default
+  }
+  if (coverageEnd) {
+    coverageEnd.min = coverageStart?.value || today;
+  }
+  // Keep the end picker's floor in sync with the chosen start date.
+  if (coverageStart && coverageEnd) {
+    coverageStart.addEventListener('change', () => {
+      coverageEnd.min = coverageStart.value || today;
+      // If the end is now before the new start, clear it so it can't be invalid.
+      if (coverageEnd.value && coverageEnd.value < coverageEnd.min) {
+        coverageEnd.value = '';
+      }
+    });
+  }
 
   /* 10. Associate labels with their fields, and set the pill disabled-states
          for the current step (so unreached steps aren't clickable on load). */
