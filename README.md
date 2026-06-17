@@ -45,7 +45,7 @@ A full-stack web application designed to digitize and streamline the application
 The MySQL schema (`pcic-backend/schema.sql`) follows the project **Data Dictionary**: every `VARCHAR`/`CHAR` size matches, allowable values are enforced (`CivilStatus ∈ {S,M,W,SE}`, `Sex ∈ {M,F}`), and the numeric *size* column is read as total digits (`float 10 → DECIMAL(10,2)`, `float 5 → DECIMAL(5,2)`, `integer 5 → max 99999`). These limits are enforced in three places — the form (`maxlength`/`max`), the API (`pcic-backend/validators.js`), and the database — so a value can never reach a column it doesn't fit.
 
 **Intentional deviations from the Data Dictionary** (kept on purpose, documented for the defense):
-- `CPIID` / `MaterialID` / `LaborID` are `INT AUTO_INCREMENT` (dictionary: varchar) so the backend can read `result.insertId`; `VarietyTable` gains a `VarietyID` primary key the dictionary lacks, enabling single-row deletes.
+- `CPIID` / `MaterialID` / `LaborID` are `INT AUTO_INCREMENT` (dictionary: varchar) so the backend can read `result.insertId`. `VarietyTable` has no surrogate key (matching the dictionary); its rows are reached through their parent `InsuranceID`.
 - Money/area columns use `DECIMAL` (dictionary: float) to avoid floating-point rounding on peso amounts.
 - `Birthday`, `CivilStatus`, and `Sex` are `NOT NULL` (dictionary leaves them blank) — `Birthday` is half the proposer identity key, and the form requires all three.
 - `ApplicationStatus` (ENUM) is a post-dictionary status-tracking feature.

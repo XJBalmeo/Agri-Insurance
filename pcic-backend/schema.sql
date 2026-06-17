@@ -11,8 +11,8 @@
 --
 -- Intentional deviations from the Data Dictionary (kept on purpose):
 --   * CPIID / MaterialID / LaborID are INT AUTO_INCREMENT (dictionary: varchar)
---     so server.js can read result.insertId; VarietyTable gains a VarietyID PK
---     the dictionary lacks, so a single variety row can be deleted on its own.
+--     so server.js can read result.insertId. VarietyTable has no surrogate key
+--     (matching the dictionary); its rows are reached via InsuranceID.
 --   * Money/area columns use DECIMAL (dictionary: float) to avoid float rounding.
 --   * Birthday / CivilStatus / Sex are NOT NULL (dictionary leaves them blank)
 --     because Birthday is half the proposer identity key and the form requires
@@ -99,7 +99,6 @@ CREATE TABLE InsuranceTable (
 -- 4. VARIETY (multiple per insurance)
 -- ------------------------------------------------------
 CREATE TABLE VarietyTable (
-    VarietyID       INT            NOT NULL AUTO_INCREMENT,
     InsuranceID     VARCHAR(10)    NOT NULL,
     Variety         VARCHAR(20)    NOT NULL,
     AreaPlanted     DECIMAL(5,2)   NOT NULL,
@@ -108,7 +107,6 @@ CREATE TABLE VarietyTable (
     AgeGroup        VARCHAR(10)    NULL,
     NumTrees        INT            NOT NULL DEFAULT 0,
     AvgYield        DECIMAL(5,1)   NOT NULL DEFAULT 0,
-    PRIMARY KEY (VarietyID),
     CONSTRAINT fk_variety_insurance FOREIGN KEY (InsuranceID) REFERENCES InsuranceTable(InsuranceID)
 ) ENGINE=InnoDB;
 

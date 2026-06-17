@@ -413,8 +413,9 @@ app.delete('/api/tables/:tableName/:id', requireAuth, async (req, res) => {
         'cpi': 'CPITable',
         'farm': 'FarmTable',
         'insurance': 'InsuranceTable',
-        'proposer': 'ProposerTable',
-        'variety': 'VarietyTable'
+        'proposer': 'ProposerTable'
+        // VarietyTable has no per-row key, so single-variety delete isn't
+        // offered here; varieties are removed when their policy is deleted.
     };
 
     const targetTable = tableMap[tableName];
@@ -433,11 +434,6 @@ app.delete('/api/tables/:tableName/:id', requireAuth, async (req, res) => {
             break;
         case 'insurance':
             idColumn = 'InsuranceID';
-            break;
-        case 'variety':
-            // VarietyTable's own PK — deleting by InsuranceID here would wipe
-            // every variety of a policy, not the single row the caller named.
-            idColumn = 'VarietyID';
             break;
         case 'farm':
             idColumn = 'PlantationID';
