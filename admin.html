@@ -34,6 +34,14 @@
                 <h1 class="modal-ttl" id="ttl">CPI Labor Table</h1>
                 <p class="topbar-meta" id="meta">cpilabortable</p>
             </div>
+            <div class="topbar-search">
+                <i class="ti ti-search search-icon" aria-hidden="true"></i>
+                <input type="text" id="search-input" class="search-input"
+                       placeholder="Search this table…" aria-label="Search the current table"
+                       oninput="handleSearch(this.value)" />
+                <button type="button" id="search-clear" class="search-clear" aria-label="Clear search"
+                        onclick="clearSearch()" style="display:none;"><i class="ti ti-x"></i></button>
+            </div>
             <div class="topbar-actions">
                 <button class="btn btn-danger" onclick="openDelete()"><i class="ti ti-trash"></i>Delete Row</button>
                 <button class="btn btn-ghost" onclick="logout()"><i class="ti ti-logout"></i>Log Out</button>
@@ -204,6 +212,9 @@
     };
 
     let cur = 'cpilabor', selIdx = null;
+    // The active search term. It deliberately persists across table switches,
+    // so a filter you type stays applied as you move between tables.
+    let searchTerm = '';
     const T = () => TABLES[cur];
 
     /* ── Auth ───────────────────────────────────────────────────
@@ -315,6 +326,41 @@
         fetchTableData();
     }
 
+    /* ── Search ─────────────────────────────────────────────────
+       Pure client-side filtering: the rows are already in memory
+       (T().rows), so we just narrow them down before drawing. The
+       term is stored lowercased once and reused on every render. */
+
+    function handleSearch(value) {
+        searchTerm = value.trim().toLowerCase();
+        document.getElementById('search-clear').style.display = searchTerm ? 'flex' : 'none';
+        render();
+    }
+
+    function clearSearch() {
+        const input = document.getElementById('search-input');
+        input.value = '';
+        handleSearch('');
+        input.focus();
+    }
+
+    // Rows whose columns contain the search term in ANY cell. With no
+    // term, every row passes. Matching is done on the same trimmed date
+    // string the table shows, so what you see is what you search.
+    function filteredRows() {
+        if (!searchTerm) return T().rows;
+        return T().rows.filter(row =>
+            T().cols.some(col => {
+                let val = row[col.n];
+                if (val === null || val === undefined) return false;
+                if (col.t === 'DATE') val = String(val).split('T')[0];
+                // Match the displayed Yes/No, not the raw 1/0, so "yes" works.
+                if (col.t === 'TINYINT(1)') val = Number(val) === 1 ? 'Yes' : 'No';
+                return String(val).toLowerCase().includes(searchTerm);
+            })
+        );
+    }
+
     function render() {
         let h = '<tr>';
         T().cols.forEach(c => h += `<th>${c.n}</th>`);
@@ -330,12 +376,35 @@
             return;
         }
 
-        T().rows.forEach((row) => {
+        const rows = filteredRows();
+
+        // The table has data, but the active filter excludes all of it.
+        // Left-aligned (like the "No records found" row) so it stays visible
+        // on wide, horizontally-scrolling tables instead of being centred
+        // across columns that sit off-screen.
+        if (rows.length === 0) {
+            const cell = document.createElement('td');
+            cell.colSpan = T().cols.length;
+            cell.style.color = 'var(--text-secondary)';
+            // textContent keeps the user's term from being treated as markup.
+            cell.textContent = `No rows match “${searchTerm}” in ${T().meta}.`;
+            const tr = document.createElement('tr');
+            tr.appendChild(cell);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        rows.forEach((row) => {
             const tr = document.createElement('tr');
             T().cols.forEach(col => {
                 let val = row[col.n];
 
                 if (col.t === 'DATE' && val) val = val.split('T')[0];
+
+                // Booleans (TINYINT(1)) read as Yes/No instead of 1/0.
+                if (col.t === 'TINYINT(1)' && val !== null && val !== undefined) {
+                    val = Number(val) === 1 ? 'Yes' : 'No';
+                }
 
                 const td = document.createElement('td');
 
