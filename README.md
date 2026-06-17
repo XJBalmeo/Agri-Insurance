@@ -59,13 +59,17 @@ Existing databases: run `pcic-backend/migrations/2026-06-13-align-to-data-dictio
 * **API Testing:** Thunder Client / Postman
 
 ## 💻 Local Setup Instructions
-1. Clone the repository and open the `pcic-backend` folder.
-2. Run `npm install` to download dependencies (Express, MySQL2, CORS, Dotenv).
+
+> **Run these from the repository root** (the folder that contains `package.json`), **not** from inside `pcic-backend/`. The dependencies and the `npm start` script live at the root.
+
+1. Clone the repository and open the **project root** folder in your terminal.
+2. Run `npm install` to download dependencies (Express, MySQL2, CORS, Dotenv) into `node_modules/`.
+   > `node_modules/` is **not** committed to git, so this step is required after every fresh clone. (See "First-time setup & pulling updates" below.)
 3. Create the database and tables by loading the schema:
    ```bash
-   mysql -u root -p < schema.sql
+   mysql -u root -p < pcic-backend/schema.sql
    ```
-4. Create a `.env` file in the `pcic-backend` folder and add your MySQL credentials:
+4. Create a `.env` file **inside the `pcic-backend` folder** and add your MySQL credentials:
    ```env
    DB_HOST=127.0.0.1
    DB_USER=root
@@ -73,4 +77,14 @@ Existing databases: run `pcic-backend/migrations/2026-06-13-align-to-data-dictio
    DB_NAME=pcic_insurance
    ADMIN_PASSWORD=your_admin_dashboard_password
    ```
-5. Start the backend server with `node server.js` (runs on port 3000).
+5. Start the backend server from the root with `npm start` (or `node pcic-backend/server.js`). It runs on port 3000.
+6. Serve the frontend separately (e.g. VS Code Live Server on port 5501) and open `index.html`.
+
+### 🔄 First-time setup & pulling updates
+
+`node_modules/` is intentionally **gitignored** — it is regenerated locally from `package.json` instead of being committed. So:
+
+- **After cloning** the repo, run `npm install` once before starting the server.
+- **After every `git pull`** that changes `package.json` (i.e. someone added a dependency), run `npm install` again.
+
+If you skip this you'll see `Error: Cannot find module 'express'` — it means the libraries haven't been installed yet, **not** that `server.js` is broken. The fix is always `npm install` from the repo root.
